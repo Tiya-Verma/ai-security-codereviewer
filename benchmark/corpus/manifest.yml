@@ -1,0 +1,36 @@
+# Labeled benchmark corpus index.
+#
+# Each entry is one labeled sample. `diff` is a path (relative to
+# benchmark/corpus/) to a unified diff. The scoring "hit" definition is
+# class-level: a finding counts as a true positive if it flags the sample's
+# `cwe` anywhere in the diff. See benchmark/metrics.py.
+#
+# Target for v1: 100-300 samples, balanced across vuln classes, >=2-3 languages,
+# mixing OWASP Benchmark, real CVE-fix pairs, synthetic injections, and
+# deliberate false-positive traps. See CLAUDE.md "Benchmark Design".
+#
+# Fields:
+#   id             unique, stable slug
+#   diff           path to the unified diff for this sample
+#   is_vulnerable  true = labeled positive, false = labeled negative
+#   cwe            ground-truth CWE id (omit if not class-specific)
+#   severity       critical | high | medium | low | info
+#   source         owasp | cve | synthetic | fp-trap
+#   language       primary language of the sample
+
+# --- starter samples (placeholders — replace with real corpus in M0) ---
+
+- id: sample-sqli-positive
+  diff: samples/sqli_positive.diff
+  is_vulnerable: true
+  cwe: CWE-89
+  severity: high
+  source: synthetic
+  language: python
+
+- id: sample-sqli-fp-trap
+  diff: samples/sqli_fp_trap.diff
+  is_vulnerable: false
+  severity: info
+  source: fp-trap
+  language: python

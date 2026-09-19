@@ -1,0 +1,14 @@
+diff --git a/app/users.py b/app/users.py
+index 1111111..3333333 100644
+--- a/app/users.py
++++ b/app/users.py
+@@ -10,3 +10,8 @@ def get_connection():
+     return sqlite3.connect(DB_PATH)
+
+
++def find_user(username):
++    conn = get_connection()
++    # Labeled NEGATIVE (fp-trap): looks like string building, but this is a
++    # parameterized query. A naive scanner flags it; the verifier should not.
++    query = "SELECT * FROM users WHERE username = ?"
++    return conn.execute(query, (username,)).fetchone()

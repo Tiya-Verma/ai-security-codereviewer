@@ -1,0 +1,33 @@
+# Example in-repo configuration for the AI security reviewer.
+# Every field is optional; these are the defaults with explanations. This file
+# doubles as the schema documentation (see src/secreview/config.py).
+
+# Extra guidance injected into the generator prompt (project conventions, hot spots).
+scan_instructions: null
+
+# Guidance for the adversarial verifier / false-positive-filtering stage.
+# This is where you teach the tool about intentional, safe design patterns.
+false_positive_instructions: null
+
+# Glob patterns to skip entirely (never scanned).
+ignore_paths:
+  - "**/vendor/**"
+  - "**/*.min.js"
+  - "**/test/fixtures/**"
+
+# Minimum severity to surface at all: critical | high | medium | low | info
+severity_threshold: low
+
+# Two-pass detection. Turn off for the generator-only baseline (benchmark M1).
+enable_verifier: true
+
+suppression:
+  # Inline comment marker that suppresses a finding on the same/next line.
+  inline_marker: "security-review: ignore"
+  # Baseline/allowlist file of accepted, recurring risks.
+  baseline_file: null
+
+models:
+  generator: claude-sonnet-5
+  verifier: claude-opus-4-8
+  max_tokens: 4096
