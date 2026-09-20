@@ -1,0 +1,27 @@
+diff --git a/context.go b/context.go
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/context.go
+@@ -0,0 +1,21 @@
++func validateHeader(header string) (clientIP string, valid bool) {
++	if header == "" {
++		return "", false
++	}
++	items := strings.Split(header, ",")
++	for i, ipStr := range items {
++		ipStr = strings.TrimSpace(ipStr)
++		ip := net.ParseIP(ipStr)
++		if ip == nil {
++			return "", false
++		}
++
++		// We need to return the first IP in the list, but,
++		// we should not early return since we need to validate that
++		// the rest of the header is syntactically valid
++		if i == 0 {
++			clientIP = ipStr
++			valid = true
++		}
++	}
++	return

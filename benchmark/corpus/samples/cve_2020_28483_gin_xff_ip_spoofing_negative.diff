@@ -1,0 +1,25 @@
+diff --git a/context.go b/context.go
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/context.go
+@@ -0,0 +1,19 @@
++func (e *Engine) validateHeader(header string) (clientIP string, valid bool) {
++	if header == "" {
++		return "", false
++	}
++	items := strings.Split(header, ",")
++	for i := len(items) - 1; i >= 0; i-- {
++		ipStr := strings.TrimSpace(items[i])
++		ip := net.ParseIP(ipStr)
++		if ip == nil {
++			return "", false
++		}
++
++		// X-Forwarded-For is appended by proxy
++		// Check IPs in reverse order and stop when find untrusted proxy
++		if (i == 0) || (!e.isTrustedProxy(ip)) {
++			return ipStr, true
++		}
++	}
++	return

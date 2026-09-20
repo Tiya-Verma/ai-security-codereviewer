@@ -1,0 +1,31 @@
+diff --git a/src/jinja2/filters.py b/src/jinja2/filters.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/jinja2/filters.py
+@@ -0,0 +1,25 @@
++    yield from value.items()
++
++
++@pass_eval_context
++def do_xmlattr(
++    eval_ctx: "EvalContext", d: t.Mapping[str, t.Any], autospace: bool = True
++) -> str:
++    """Create an SGML/XML attribute string based on the items in a dict.
++    All values that are neither `none` nor `undefined` are automatically
++    escaped:
++
++    .. sourcecode:: html+jinja
++
++
++    As you can see it automatically prepends a space in front of the item
++    if the filter returned something unless the second parameter is false.
++    """
++    rv = " ".join(
++        f'{escape(key)}="{escape(value)}"'
++        for key, value in d.items()
++        if value is not None and not isinstance(value, Undefined)
++    )
++
++    if autospace and rv:
++        rv = " " + rv

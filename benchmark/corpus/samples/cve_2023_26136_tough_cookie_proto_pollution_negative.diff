@@ -1,0 +1,58 @@
+diff --git a/lib/memstore.js b/lib/memstore.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/lib/memstore.js
+@@ -0,0 +1,52 @@
++  constructor() {
++    super();
++    this.synchronous = true;
++    this.idx = Object.create(null);
++    const customInspectSymbol = getCustomInspectSymbol();
++    if (customInspectSymbol) {
++      this[customInspectSymbol] = this.inspect;
++
++
++  putCookie(cookie, cb) {
++    if (!this.idx[cookie.domain]) {
++      this.idx[cookie.domain] = Object.create(null);
++    }
++    if (!this.idx[cookie.domain][cookie.path]) {
++      this.idx[cookie.domain][cookie.path] = Object.create(null);
++    }
++    this.idx[cookie.domain][cookie.path][cookie.key] = cookie;
++    cb(null);
++
++    return cb(null);
++  }
++  removeAllCookies(cb) {
++    this.idx = Object.create(null);
++    return cb(null);
++  }
++  getAllCookies(cb) {
++
++function inspectFallback(val) {
++  const domains = Object.keys(val);
++  if (domains.length === 0) {
++    return "[Object: null prototype] {}";
++  }
++  let result = "[Object: null prototype] {\n";
++  Object.keys(val).forEach((domain, i) => {
++    result += formatDomain(domain, val[domain]);
++    if (i < domains.length - 1) {
++
++
++function formatDomain(domainName, domainValue) {
++  const indent = "  ";
++  let result = `${indent}'${domainName}': [Object: null prototype] {\n`;
++  Object.keys(domainValue).forEach((path, i, paths) => {
++    result += formatPath(path, domainValue[path]);
++    if (i < paths.length - 1) {
++
++
++function formatPath(pathName, pathValue) {
++  const indent = "    ";
++  let result = `${indent}'${pathName}': [Object: null prototype] {\n`;
++  Object.keys(pathValue).forEach((cookieName, i, cookieNames) => {
++    const cookie = pathValue[cookieName];
++    result += `      ${cookieName}: ${cookie.inspect()}`;

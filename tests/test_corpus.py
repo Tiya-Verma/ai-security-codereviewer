@@ -41,3 +41,13 @@ def test_labels_are_consistent() -> None:
         else:
             # Negatives (fp-traps) must not carry a cwe, or they'd score as positives.
             assert not e.get("cwe"), f"negative sample should not have cwe: {e['id']}"
+
+
+def test_cve_samples_have_provenance() -> None:
+    # Every cve-sourced sample must be auditable back to a real fix commit.
+    for e in _ENTRIES:
+        if e.get("source") == "cve":
+            assert e.get("cve", "").startswith(("CVE-", "GHSA-")), f"bad cve id: {e['id']}"
+            assert str(e.get("source_url", "")).startswith("https://github.com/"), (
+                f"cve sample missing source_url: {e['id']}"
+            )

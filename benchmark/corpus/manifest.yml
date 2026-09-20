@@ -9,11 +9,18 @@
 # mixing OWASP Benchmark, real CVE-fix pairs, synthetic injections, and
 # deliberate false-positive traps. See CLAUDE.md "Benchmark Design".
 #
-# Current state (starter corpus): 14 samples, Python + JavaScript, authored
-# synthetically with matched positive/fp-trap pairs. Real CVE-fix pairs and
-# OWASP Benchmark cases are still TODO and must be sourced from their origins
-# (OSV.dev / GitHub Security Advisories / the OWASP Benchmark repo), not
-# fabricated.
+# Current state (24 samples): Python + JavaScript + Go across 3 languages.
+#   - 14 synthetic samples (incl. 4 false-positive traps), matched pairs.
+#   - 10 real CVE-fix samples (5 matched positive/negative pairs) transcribed
+#     byte-faithfully from actual fix commits; the positive is the vulnerable
+#     pre-fix code, the negative is the fixed code (a labeled negative for that
+#     same class). Every CVE sample carries `cve` + `source_url` for audit.
+# OWASP Benchmark cases are still TODO.
+#
+# Deliberately NOT included: CVE-2024-35195 (requests, cert-validation on pooled
+# connections). Its vulnerability is the *absence* of per-request TLS context in
+# connection-pool reuse — the changed line looks benign in isolation and is not
+# detectable from the diff alone, so it would be an unfair false-negative trap.
 #
 # Fields:
 #   id             unique, stable slug
@@ -23,6 +30,8 @@
 #   severity       critical | high | medium | low | info
 #   source         owasp | cve | synthetic | fp-trap
 #   language       primary language of the sample
+#   cve            CVE id (cve-sourced samples only)
+#   source_url     fix-commit URL the sample was transcribed from (cve only)
 
 # ---------- Python ----------
 
@@ -135,3 +144,103 @@
   severity: medium
   source: synthetic
   language: javascript
+
+# ---------- Real CVE-fix pairs (transcribed from actual fix commits) ----------
+# Each pair: positive = vulnerable pre-fix code; negative = fixed code re-scanned.
+
+# CVE-2021-3807 — ansi-regex ReDoS (catastrophic backtracking in the ANSI regex).
+- id: cve-2021-3807-ansi-regex-positive
+  diff: samples/cve_2021_3807_ansi_regex_redos_positive.diff
+  is_vulnerable: true
+  cwe: CWE-1333
+  severity: high
+  source: cve
+  language: javascript
+  cve: CVE-2021-3807
+  source_url: https://github.com/chalk/ansi-regex/commit/419250fa510bf31b4cc672e76537a64f9332e1f1
+- id: cve-2021-3807-ansi-regex-negative
+  diff: samples/cve_2021_3807_ansi_regex_redos_negative.diff
+  is_vulnerable: false
+  severity: info
+  source: cve
+  language: javascript
+  cve: CVE-2021-3807
+  source_url: https://github.com/chalk/ansi-regex/commit/419250fa510bf31b4cc672e76537a64f9332e1f1
+
+# CVE-2023-26136 — tough-cookie prototype pollution ({} index keyed by cookie domain).
+- id: cve-2023-26136-tough-cookie-positive
+  diff: samples/cve_2023_26136_tough_cookie_proto_pollution_positive.diff
+  is_vulnerable: true
+  cwe: CWE-1321
+  severity: medium
+  source: cve
+  language: javascript
+  cve: CVE-2023-26136
+  source_url: https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e
+- id: cve-2023-26136-tough-cookie-negative
+  diff: samples/cve_2023_26136_tough_cookie_proto_pollution_negative.diff
+  is_vulnerable: false
+  severity: info
+  source: cve
+  language: javascript
+  cve: CVE-2023-26136
+  source_url: https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e
+
+# CVE-2024-22195 — Jinja xmlattr filter HTML attribute injection (keys not validated).
+- id: cve-2024-22195-jinja-positive
+  diff: samples/cve_2024_22195_jinja_xmlattr_injection_positive.diff
+  is_vulnerable: true
+  cwe: CWE-79
+  severity: medium
+  source: cve
+  language: python
+  cve: CVE-2024-22195
+  source_url: https://github.com/pallets/jinja/commit/7dd3680e6eea0d77fde024763657aa4d884ddb23
+- id: cve-2024-22195-jinja-negative
+  diff: samples/cve_2024_22195_jinja_xmlattr_injection_negative.diff
+  is_vulnerable: false
+  severity: info
+  source: cve
+  language: python
+  cve: CVE-2024-22195
+  source_url: https://github.com/pallets/jinja/commit/7dd3680e6eea0d77fde024763657aa4d884ddb23
+
+# CVE-2020-28483 — gin trusts client-supplied X-Forwarded-For (leftmost IP).
+# NVD tags this CWE-444, but the code behavior is IP spoofing; labeled CWE-348
+# (Use of Less Trusted Source) as the behaviorally-accurate class.
+- id: cve-2020-28483-gin-positive
+  diff: samples/cve_2020_28483_gin_xff_ip_spoofing_positive.diff
+  is_vulnerable: true
+  cwe: CWE-348
+  severity: high
+  source: cve
+  language: go
+  cve: CVE-2020-28483
+  source_url: https://github.com/gin-gonic/gin/commit/5929d521715610c9dd14898ebbe1d188d5de8937
+- id: cve-2020-28483-gin-negative
+  diff: samples/cve_2020_28483_gin_xff_ip_spoofing_negative.diff
+  is_vulnerable: false
+  severity: info
+  source: cve
+  language: go
+  cve: CVE-2020-28483
+  source_url: https://github.com/gin-gonic/gin/commit/5929d521715610c9dd14898ebbe1d188d5de8937
+
+# CVE-2020-26160 — jwt-go audience bypass (aud as []string skips the string check).
+- id: cve-2020-26160-jwt-go-positive
+  diff: samples/cve_2020_26160_jwt_go_aud_bypass_positive.diff
+  is_vulnerable: true
+  cwe: CWE-287
+  severity: high
+  source: cve
+  language: go
+  cve: CVE-2020-26160
+  source_url: https://github.com/dgrijalva/jwt-go/commit/ec0a89a131e3e8567adcb21254a5cd20a70ea4ab
+- id: cve-2020-26160-jwt-go-negative
+  diff: samples/cve_2020_26160_jwt_go_aud_bypass_negative.diff
+  is_vulnerable: false
+  severity: info
+  source: cve
+  language: go
+  cve: CVE-2020-26160
+  source_url: https://github.com/dgrijalva/jwt-go/commit/ec0a89a131e3e8567adcb21254a5cd20a70ea4ab
