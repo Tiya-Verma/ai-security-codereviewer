@@ -14,17 +14,26 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
-from metrics import Metrics, Sample, aggregate, score  # noqa: E402  (sibling module)
+from metrics import Sample, aggregate, calibration, score  # noqa: E402  (sibling module)
+from report import build_report, mode_summary, render_markdown, write_report  # noqa: E402
 
+from secreview import __version__
 from secreview.config import ReviewConfig
 from secreview.engine import review_diff
 from secreview.llm import LLMClient
+from secreview.models import Finding
 
 CORPUS_DIR = Path(__file__).parent / "corpus"
 MANIFEST = CORPUS_DIR / "manifest.yml"
+RESULTS_DIR = Path(__file__).parent / "results"
+
+# One (Sample, findings) pair per corpus sample after running a pipeline mode.
+ScoredRun = list[tuple[Sample, list[Finding]]]
 
 
 def load_corpus(limit: int | None = None) -> list[tuple[Sample, str]]:
@@ -42,26 +51,28 @@ def load_corpus(limit: int | None = None) -> list[tuple[Sample, str]]:
     return pairs
 
 
-def run_mode(pairs: list[tuple[Sample, str]], *, enable_verifier: bool) -> Metrics:
+def corpus_sha256() -> str:
+    """Hash the manifest so results are traceable to the exact corpus."""
+    return hashlib.sha256(MANIFEST.read_bytes()).hexdigest()
+
+
+def run_mode(
+    pairs: list[tuple[Sample, str]], config: ReviewConfig, *, enable_verifier: bool
+) -> ScoredRun:
+    """Run one pipeline mode, keeping per-sample findings (needed for calibration)."""
     client = LLMClient()
-    config = ReviewConfig()
-    config.enable_verifier = enable_verifier
-    per_sample = []
+    config = config.model_copy(update={"enable_verifier": enable_verifier})
+    out: ScoredRun = []
     for sample, diff_text in pairs:
         result = review_diff(diff_text, config=config, client=client)
-        per_sample.append(score(sample, result.final_findings))
-    return aggregate(per_sample)
+        out.append((sample, result.final_findings))
+    return out
 
 
-def _print_comparison(gen_only: Metrics, gen_verify: Metrics) -> None:
-    g, v = gen_only.as_dict(), gen_verify.as_dict()
-    keys = ["precision", "recall", "f1", "false_positives_per_pr", "tp", "fp", "fn"]
-    width = max(len(k) for k in keys)
-    print(f"\n{'metric'.ljust(width)}   gen-only   gen+verify")
-    print("-" * (width + 24))
-    for k in keys:
-        print(f"{k.ljust(width)}   {str(g[k]).ljust(8)}   {v[k]}")
-    print(f"\nsamples: {gen_verify.samples}")
+def summarize(run: ScoredRun) -> dict:
+    """Aggregate metrics + calibration for one mode's run."""
+    metrics = aggregate([score(s, f) for s, f in run])
+    return mode_summary(metrics, calibration(run))
 
 
 def main() -> None:
@@ -74,10 +85,24 @@ def main() -> None:
         print("Corpus is empty. Add samples to benchmark/corpus/ and list them in manifest.yml.")
         return
 
+    config = ReviewConfig()
     print(f"Running {len(pairs)} sample(s) in both modes...")
-    gen_only = run_mode(pairs, enable_verifier=False)
-    gen_verify = run_mode(pairs, enable_verifier=True)
-    _print_comparison(gen_only, gen_verify)
+    gen_only = summarize(run_mode(pairs, config, enable_verifier=False))
+    gen_verify = summarize(run_mode(pairs, config, enable_verifier=True))
+
+    report = build_report(
+        tool_version=__version__,
+        models={"generator": config.models.generator, "verifier": config.models.verifier},
+        corpus={"samples": len(pairs), "sha256": corpus_sha256()},
+        generator_only=gen_only,
+        generator_plus_verifier=gen_verify,
+        generated_at=datetime.now(UTC).isoformat(),
+    )
+    latest, versioned = write_report(RESULTS_DIR, report)
+
+    print()
+    print(render_markdown(report))
+    print(f"Wrote {latest} and {versioned.name}")
 
 
 if __name__ == "__main__":

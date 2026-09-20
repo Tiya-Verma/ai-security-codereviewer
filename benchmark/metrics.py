@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from secreview.models import Finding
+from secreview.models import Confidence, Finding
 
 
 @dataclass
@@ -105,3 +105,30 @@ def aggregate(per_sample: list[Metrics]) -> Metrics:
         total.tn += m.tn
         total.samples += m.samples
     return total
+
+
+def calibration(
+    results: list[tuple[Sample, list[Finding]]],
+) -> dict[str, dict[str, float | int]]:
+    """Precision within each confidence bucket, across all findings.
+
+    This is the check that confidence scoring is *meaningful* rather than
+    decorative (CLAUDE.md "Confidence calibration"): a well-calibrated system
+    has higher precision in its "high" bucket than its "low" bucket. Operates
+    at the finding level (not the sample level), since confidence is per finding.
+    """
+    correct_by_bucket: dict[str, list[bool]] = {c.value: [] for c in Confidence}
+    for sample, findings in results:
+        for f in findings:
+            correct_by_bucket[f.confidence.value].append(is_hit(sample, f))
+
+    out: dict[str, dict[str, float | int]] = {}
+    for bucket, flags in correct_by_bucket.items():
+        n = len(flags)
+        correct = sum(flags)
+        out[bucket] = {
+            "findings": n,
+            "correct": correct,
+            "precision": round(correct / n, 4) if n else 0.0,
+        }
+    return out
