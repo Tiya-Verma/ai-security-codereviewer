@@ -1,0 +1,14 @@
+diff --git a/app/cmdi_fp_trap.py b/app/cmdi_fp_trap.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/app/cmdi_fp_trap.py
+@@ -0,0 +1,8 @@
++import subprocess
++
++
++def run_backup(name):
++    # Labeled NEGATIVE (fp-trap): resembles a shell exec, but args are passed
++    # as a list with shell=False, so there is no shell to inject into.
++    subprocess.run(["tar", "czf", f"/backups/{name}.tgz", "/data"],
++                   shell=False, check=True)

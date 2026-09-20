@@ -1,0 +1,11 @@
+diff --git a/src/open_redirect_positive.js b/src/open_redirect_positive.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/open_redirect_positive.js
+@@ -0,0 +1,5 @@
++export function redirect(req, res) {
++  // Labeled positive (CWE-601): unvalidated user input used as the redirect
++  // target -> open redirect / phishing pivot.
++  res.redirect(req.query.next);
++}

@@ -52,8 +52,6 @@ class Finding(BaseModel):
     remediation: str | None = Field(
         default=None, description="Suggested fix, educational/pattern-level only."
     )
-    # Populated by the verifier pass.
-    verdict: Verdict | None = None
 
 
 class Verdict(BaseModel):
@@ -69,8 +67,15 @@ class Verdict(BaseModel):
     )
 
 
-# Resolve the forward reference in Finding.verdict.
-Finding.model_rebuild()
+class VerifiedFinding(Finding):
+    """A finding that survived the verifier pass, carrying its verdict.
+
+    Kept separate from `Finding` so the generator's tool schema stays pure —
+    the model that proposes findings is never shown (or asked to fabricate) a
+    verdict; that is populated only after adversarial re-check.
+    """
+
+    verdict: Verdict
 
 
 class ReviewResult(BaseModel):

@@ -1,0 +1,13 @@
+diff --git a/app/pickle_deser_positive.py b/app/pickle_deser_positive.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/app/pickle_deser_positive.py
+@@ -0,0 +1,7 @@
++import pickle
++
++
++def load_session(blob: bytes):
++    # Labeled positive (CWE-502): untrusted bytes deserialized with pickle,
++    # which can execute arbitrary code during unpickling.
++    return pickle.loads(blob)

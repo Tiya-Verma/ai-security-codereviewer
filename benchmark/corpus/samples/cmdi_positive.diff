@@ -1,0 +1,13 @@
+diff --git a/app/cmdi_positive.py b/app/cmdi_positive.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/app/cmdi_positive.py
+@@ -0,0 +1,7 @@
++import os
++
++
++def run_backup(name):
++    # Labeled positive (CWE-78): user-controlled name concatenated into a
++    # shell command string passed to os.system -> command injection.
++    os.system("tar czf /backups/" + name + ".tgz /data")

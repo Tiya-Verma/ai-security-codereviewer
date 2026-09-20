@@ -41,6 +41,15 @@ the single most persuasive artifact in the project (CLAUDE.md M2).
 
 Target for v1: **100–300 labeled samples**, balanced across classes, ≥2–3 languages.
 
+### Current state (starter corpus)
+
+14 samples, Python + JavaScript, 10 CWE classes, authored **synthetically** with
+matched positive/fp-trap pairs (10 vulnerable / 4 safe). Integrity is enforced by
+`tests/test_corpus.py` (ids unique, every diff parses, no orphans, labels
+consistent). Still **TODO**: real CVE-fix pairs (OSV.dev / GitHub Security
+Advisories) and OWASP Benchmark cases — these must be pulled from their origins,
+not fabricated, and are best added once an API key lets us score them too.
+
 ## "Hit" definition
 
 Class-level by default: a finding is a true positive if it flags the sample's

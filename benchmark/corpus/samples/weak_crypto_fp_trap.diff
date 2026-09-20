@@ -1,0 +1,13 @@
+diff --git a/app/weak_crypto_fp_trap.py b/app/weak_crypto_fp_trap.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/app/weak_crypto_fp_trap.py
+@@ -0,0 +1,7 @@
++import hashlib
++
++
++def cache_key(url: str) -> str:
++    # Labeled NEGATIVE (fp-trap): MD5 used purely as a non-security cache key,
++    # not to protect a secret. A naive scanner flags all MD5 use.
++    return hashlib.md5(url.encode()).hexdigest()

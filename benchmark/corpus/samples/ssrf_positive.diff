@@ -1,0 +1,12 @@
+diff --git a/src/ssrf_positive.js b/src/ssrf_positive.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/ssrf_positive.js
+@@ -0,0 +1,6 @@
++export async function fetchAvatar(userUrl) {
++  // Labeled positive (CWE-918): a user-controlled URL is fetched server-side
++  // with no allowlist -> SSRF (can reach internal metadata endpoints).
++  const res = await fetch(userUrl);
++  return await res.arrayBuffer();
++}

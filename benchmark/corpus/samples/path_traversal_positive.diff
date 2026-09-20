@@ -1,0 +1,11 @@
+diff --git a/app/path_traversal_positive.py b/app/path_traversal_positive.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/app/path_traversal_positive.py
+@@ -0,0 +1,5 @@
++def read_report(filename):
++    # Labeled positive (CWE-22): filename is not sanitized, so "../" escapes
++    # the reports directory -> path traversal / arbitrary file read.
++    with open("/var/reports/" + filename) as f:
++        return f.read()

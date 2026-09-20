@@ -1,0 +1,13 @@
+diff --git a/app/weak_crypto_positive.py b/app/weak_crypto_positive.py
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/app/weak_crypto_positive.py
+@@ -0,0 +1,7 @@
++import hashlib
++
++
++def hash_password(password: str) -> str:
++    # Labeled positive (CWE-327): MD5 is unsuitable for password hashing
++    # (fast, unsalted, collision-prone).
++    return hashlib.md5(password.encode()).hexdigest()

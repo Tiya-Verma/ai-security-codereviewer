@@ -1,0 +1,11 @@
+diff --git a/src/xss_fp_trap.js b/src/xss_fp_trap.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/xss_fp_trap.js
+@@ -0,0 +1,5 @@
++export function render(comment) {
++  // Labeled NEGATIVE (fp-trap): textContent does not parse HTML, so this is
++  // safe even though it resembles the innerHTML XSS sink.
++  document.getElementById("out").textContent = comment;
++}

@@ -1,0 +1,14 @@
+diff --git a/src/nosql_injection_positive.js b/src/nosql_injection_positive.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/nosql_injection_positive.js
+@@ -0,0 +1,8 @@
++export async function login(req, users) {
++  // Labeled positive (CWE-943): request body objects passed directly into a
++  // Mongo query allow operator injection (e.g. {"$ne": null}).
++  return await users.findOne({
++    username: req.body.username,
++    password: req.body.password,
++  });
++}

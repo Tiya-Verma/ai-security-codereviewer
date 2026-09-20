@@ -1,0 +1,11 @@
+diff --git a/src/xss_positive.js b/src/xss_positive.js
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/src/xss_positive.js
+@@ -0,0 +1,5 @@
++export function render(comment) {
++  // Labeled positive (CWE-79): untrusted comment assigned to innerHTML is
++  // parsed as HTML -> stored/reflected XSS.
++  document.getElementById("out").innerHTML = comment;
++}

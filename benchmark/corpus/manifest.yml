@@ -9,6 +9,12 @@
 # mixing OWASP Benchmark, real CVE-fix pairs, synthetic injections, and
 # deliberate false-positive traps. See CLAUDE.md "Benchmark Design".
 #
+# Current state (starter corpus): 14 samples, Python + JavaScript, authored
+# synthetically with matched positive/fp-trap pairs. Real CVE-fix pairs and
+# OWASP Benchmark cases are still TODO and must be sourced from their origins
+# (OSV.dev / GitHub Security Advisories / the OWASP Benchmark repo), not
+# fabricated.
+#
 # Fields:
 #   id             unique, stable slug
 #   diff           path to the unified diff for this sample
@@ -18,9 +24,9 @@
 #   source         owasp | cve | synthetic | fp-trap
 #   language       primary language of the sample
 
-# --- starter samples (placeholders — replace with real corpus in M0) ---
+# ---------- Python ----------
 
-- id: sample-sqli-positive
+- id: py-sqli-positive
   diff: samples/sqli_positive.diff
   is_vulnerable: true
   cwe: CWE-89
@@ -28,9 +34,104 @@
   source: synthetic
   language: python
 
-- id: sample-sqli-fp-trap
+- id: py-sqli-fp-trap
   diff: samples/sqli_fp_trap.diff
   is_vulnerable: false
   severity: info
   source: fp-trap
   language: python
+
+- id: py-cmdi-positive
+  diff: samples/cmdi_positive.diff
+  is_vulnerable: true
+  cwe: CWE-78
+  severity: critical
+  source: synthetic
+  language: python
+
+- id: py-cmdi-fp-trap
+  diff: samples/cmdi_fp_trap.diff
+  is_vulnerable: false
+  severity: info
+  source: fp-trap
+  language: python
+
+- id: py-path-traversal-positive
+  diff: samples/path_traversal_positive.diff
+  is_vulnerable: true
+  cwe: CWE-22
+  severity: high
+  source: synthetic
+  language: python
+
+- id: py-pickle-deser-positive
+  diff: samples/pickle_deser_positive.diff
+  is_vulnerable: true
+  cwe: CWE-502
+  severity: critical
+  source: synthetic
+  language: python
+
+- id: py-weak-crypto-positive
+  diff: samples/weak_crypto_positive.diff
+  is_vulnerable: true
+  cwe: CWE-327
+  severity: medium
+  source: synthetic
+  language: python
+
+- id: py-weak-crypto-fp-trap
+  diff: samples/weak_crypto_fp_trap.diff
+  is_vulnerable: false
+  severity: info
+  source: fp-trap
+  language: python
+
+# ---------- JavaScript / TypeScript ----------
+
+- id: js-xss-positive
+  diff: samples/xss_positive.diff
+  is_vulnerable: true
+  cwe: CWE-79
+  severity: high
+  source: synthetic
+  language: javascript
+
+- id: js-xss-fp-trap
+  diff: samples/xss_fp_trap.diff
+  is_vulnerable: false
+  severity: info
+  source: fp-trap
+  language: javascript
+
+- id: js-ssrf-positive
+  diff: samples/ssrf_positive.diff
+  is_vulnerable: true
+  cwe: CWE-918
+  severity: high
+  source: synthetic
+  language: javascript
+
+- id: js-hardcoded-secret-positive
+  diff: samples/hardcoded_secret_positive.diff
+  is_vulnerable: true
+  cwe: CWE-798
+  severity: high
+  source: synthetic
+  language: javascript
+
+- id: js-nosql-injection-positive
+  diff: samples/nosql_injection_positive.diff
+  is_vulnerable: true
+  cwe: CWE-943
+  severity: high
+  source: synthetic
+  language: javascript
+
+- id: js-open-redirect-positive
+  diff: samples/open_redirect_positive.diff
+  is_vulnerable: true
+  cwe: CWE-601
+  severity: medium
+  source: synthetic
+  language: javascript

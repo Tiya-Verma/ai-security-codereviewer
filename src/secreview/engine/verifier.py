@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from ..config import ReviewConfig
 from ..llm import LLMClient
-from ..models import Finding, Verdict
+from ..models import Finding, Verdict, VerifiedFinding
 
 _SYSTEM = """You are an adversarial reviewer. You are given a security finding another
 model proposed about a code change. Assume it is a FALSE POSITIVE and try to prove the
@@ -61,14 +61,17 @@ def verify(
     config: ReviewConfig,
     findings: list[Finding],
     context: str = "",
-) -> list[Finding]:
-    """Verify each finding, attach its verdict, and keep only the upheld ones."""
-    upheld: list[Finding] = []
+) -> list[VerifiedFinding]:
+    """Verify each finding and return only the upheld ones, each carrying its verdict."""
+    upheld: list[VerifiedFinding] = []
     for f in findings:
         verdict = verify_one(client, config, f, context)
-        f.verdict = verdict
         if verdict.upheld:
             # Let the verifier's (adversarial) confidence override the generator's.
-            f.confidence = verdict.confidence
-            upheld.append(f)
+            upheld.append(
+                VerifiedFinding(
+                    **{**f.model_dump(), "confidence": verdict.confidence},
+                    verdict=verdict,
+                )
+            )
     return upheld
