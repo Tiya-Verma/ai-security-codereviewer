@@ -1,0 +1,17 @@
+# Example baseline / allowlist of accepted, recurring risks.
+# Point `.security-review.yml` at this file:  suppression.baseline_file: .security-baseline.yml
+#
+# A finding is suppressed when it matches ANY entry below. An entry matches when
+# every field it specifies matches the finding:
+#   file   (required) glob against the finding's file path
+#   cwe    (optional) exact CWE id
+#   title  (optional) case-insensitive substring of the finding's title
+# A file-only entry accepts all findings in that file.
+
+# Accept a specific known risk in a legacy module.
+- file: "legacy/report_export.py"
+  cwe: CWE-89
+  title: "SQL injection"
+
+# Accept all findings in vendored code we don't own.
+- file: "third_party/**"

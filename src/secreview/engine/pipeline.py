@@ -9,6 +9,7 @@ from ..config import ReviewConfig
 from ..diff import parse_diff
 from ..llm import LLMClient
 from ..models import ReviewResult
+from ..suppression import apply_suppressions
 from .generator import generate
 from .verifier import verify
 
@@ -18,6 +19,7 @@ def review_diff(
     config: ReviewConfig | None = None,
     client: LLMClient | None = None,
     context: str = "",
+    base_dir: str = ".",
 ) -> ReviewResult:
     """Run the full detection pipeline over a unified diff.
 
@@ -38,4 +40,11 @@ def review_diff(
     threshold = config.severity_threshold
     final = [f for f in final if f.severity.rank >= threshold.rank]
 
-    return ReviewResult(generator_findings=generator_findings, final_findings=final)
+    # Config-driven suppression is the last filter before findings surface.
+    final, suppressed = apply_suppressions(final, changed, config, base_dir=base_dir)
+
+    return ReviewResult(
+        generator_findings=generator_findings,
+        final_findings=final,
+        suppressed_findings=[s.finding for s in suppressed],
+    )

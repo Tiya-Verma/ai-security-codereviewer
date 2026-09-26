@@ -37,6 +37,11 @@ def _print_table(result: ReviewResult) -> None:
         loc = f"{f.file}:{f.line}" if f.line else f.file
         table.add_row(f.severity.value, f.confidence.value, f.cwe or "-", loc, f.title)
     console.print(table)
+    if result.suppressed_findings:
+        console.print(
+            f"[dim]{len(result.suppressed_findings)} finding(s) suppressed "
+            f"(inline marker / baseline).[/dim]"
+        )
 
 
 @click.group()

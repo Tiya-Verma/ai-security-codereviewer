@@ -24,6 +24,10 @@ class ChangedFile:
     added_lines: set[int] = field(default_factory=set)
     # The raw per-file patch text, for feeding to the generator.
     patch_text: str = ""
+    # New-file line number -> content, for every line present in the new file
+    # within the diff's hunks (added + context). Used to read inline suppress
+    # markers, and the primitive for finding->diff-position mapping (M5 step 7).
+    new_lines: dict[int, str] = field(default_factory=dict)
 
 
 def parse_diff(diff_text: str, ignore_paths: list[str] | None = None) -> list[ChangedFile]:
@@ -41,11 +45,18 @@ def parse_diff(diff_text: str, ignore_paths: list[str] | None = None) -> list[Ch
             continue
 
         added: set[int] = set()
+        new_lines: dict[int, str] = {}
         for hunk in pf:
             for line in hunk:
-                if line.is_added and line.target_line_no is not None:
+                if line.target_line_no is None:
+                    continue  # removed line: not present in the new file
+                if line.is_added or line.is_context:
+                    new_lines[line.target_line_no] = line.value.rstrip("\n")
+                if line.is_added:
                     added.add(line.target_line_no)
 
-        result.append(ChangedFile(path=path, added_lines=added, patch_text=str(pf)))
+        result.append(
+            ChangedFile(path=path, added_lines=added, patch_text=str(pf), new_lines=new_lines)
+        )
 
     return result
