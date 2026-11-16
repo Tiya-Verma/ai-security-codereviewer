@@ -1,6 +1,6 @@
 """Config-driven suppression: the last filter before findings are surfaced.
 
-Two mechanisms (CLAUDE.md "Suppression mechanism"):
+Two mechanisms (docs/ROADMAP.md "Suppression mechanism"):
 
 1. Inline marker — a comment like ``// security-review: ignore`` on the flagged
    line or the line directly above it drops that finding. Lets a developer

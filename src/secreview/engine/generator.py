@@ -2,7 +2,7 @@
 
 This is intentionally high-recall — it is allowed to over-report, because the
 verifier pass is what buys precision. The benchmark measures the delta between
-this pass alone and this pass + verifier (CLAUDE.md M1 vs M2).
+this pass alone and this pass + verifier (docs/ROADMAP.md M1 vs M2).
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from ..config import ReviewConfig
 from ..diff import ChangedFile
-from ..llm import LLMClient
+from ..llm import StructuredClient
 from ..models import Finding
 
 _SYSTEM = """You are a security engineer reviewing a code change for vulnerabilities.
@@ -26,7 +26,7 @@ class _GeneratorOutput(BaseModel):
 
 
 def generate(
-    client: LLMClient,
+    client: StructuredClient,
     config: ReviewConfig,
     changed: list[ChangedFile],
     context: str = "",

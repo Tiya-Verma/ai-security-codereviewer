@@ -2,7 +2,7 @@
 
 The public claim of this project is a *reproducible* precision/recall number,
 produced by a two-pass (generator -> adversarial verifier) detection pipeline
-and measured against a versioned, labeled benchmark corpus. See CLAUDE.md.
+and measured against a versioned, labeled benchmark corpus. See docs/ROADMAP.md.
 """
 
 __version__ = "0.1.0"

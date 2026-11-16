@@ -3,14 +3,14 @@
 The verifier's job is the opposite of the generator's: assume each finding is a
 false positive and try to prove the code is actually safe. This directly targets
 the "flagged intentional design patterns" and "overconfidence from incomplete
-context" failure modes in CLAUDE.md. It also reports what context would change
+context" failure modes in docs/ROADMAP.md. It also reports what context would change
 its assessment, so we never surface unwarranted certainty.
 """
 
 from __future__ import annotations
 
 from ..config import ReviewConfig
-from ..llm import LLMClient
+from ..llm import StructuredClient
 from ..models import Finding, Verdict, VerifiedFinding
 
 _SYSTEM = """You are an adversarial reviewer. You are given a security finding another
@@ -23,7 +23,7 @@ what additional context (call sites, definitions, config) would change your asse
 
 
 def verify_one(
-    client: LLMClient,
+    client: StructuredClient,
     config: ReviewConfig,
     finding: Finding,
     context: str = "",
@@ -57,7 +57,7 @@ def verify_one(
 
 
 def verify(
-    client: LLMClient,
+    client: StructuredClient,
     config: ReviewConfig,
     findings: list[Finding],
     context: str = "",

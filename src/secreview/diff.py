@@ -5,7 +5,7 @@ tokenize source. The one place language matters is `ignore_paths` filtering,
 which is glob-based and caller-supplied.
 
 Mapping findings back to correct diff line positions (for inline PR comments)
-is the fiddly part called out in CLAUDE.md build step 7 — `changed_line_numbers`
+is the fiddly part called out in docs/ROADMAP.md build step 7 — `changed_line_numbers`
 is the primitive that work will build on.
 """
 

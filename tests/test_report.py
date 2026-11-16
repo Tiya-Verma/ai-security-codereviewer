@@ -65,6 +65,7 @@ def test_render_markdown_contains_tables() -> None:
     assert "Generator only" in md and "Generator + Verifier" in md
     assert "Confidence calibration" in md
     assert "claude-opus-4-8" in md  # provenance line
+    assert "backend `api`" in md
     assert "deadbeef" in md  # short corpus sha
 
 

@@ -1,6 +1,6 @@
 """Local CLI: `secreview scan <diff>` — the primary v1 entrypoint.
 
-Per CLAUDE.md build order, the CLI (generator pass, then generator+verifier)
+Per docs/ROADMAP.md build order, the CLI (generator pass, then generator+verifier)
 comes well before the GitHub Action. The Action will eventually shell out to
 this same engine so there is one code path.
 """

@@ -30,3 +30,6 @@ benchmark/.cache/
 .idea/
 .vscode/
 .DS_Store
+
+# Local Claude Code project instructions
+CLAUDE.md

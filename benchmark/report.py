@@ -2,7 +2,7 @@
 
 The results record is the project's core published artifact, so it is versioned:
 tagged with the tool version, the generator/verifier model ids, and a corpus
-hash so any number can be traced back to exactly what produced it (CLAUDE.md
+hash so any number can be traced back to exactly what produced it (docs/ROADMAP.md
 "Keeping it honest"). `render_markdown` produces the gen-only vs. gen+verify
 table that drops straight into the README.
 
@@ -42,12 +42,15 @@ def build_report(
     generator_only: dict,
     generator_plus_verifier: dict,
     generated_at: str,
+    backend: str = "api",
 ) -> dict:
     """Assemble the versioned results record. `generated_at` is passed in (not
-    stamped here) so the report is deterministic and testable."""
+    stamped here) so the report is deterministic and testable. `backend` records
+    how the models were called (Messages API vs. headless Claude Code)."""
     return {
         "tool_version": tool_version,
         "generated_at": generated_at,
+        "backend": backend,
         "models": models,
         "corpus": corpus,
         "modes": {
@@ -69,6 +72,7 @@ def render_markdown(report: dict) -> str:
         f"_Tool `secreview` v{report['tool_version']} · "
         f"generator `{models.get('generator', '?')}` · "
         f"verifier `{models.get('verifier', '?')}` · "
+        f"backend `{report.get('backend', 'api')}` · "
         f"corpus {corpus.get('samples', '?')} samples "
         f"(sha `{str(corpus.get('sha256', '?'))[:8]}`) · "
         f"generated {report['generated_at']}_"

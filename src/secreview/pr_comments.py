@@ -1,6 +1,6 @@
 """Map findings to GitHub PR review comments, and route them inline vs. summary.
 
-The fiddly part (CLAUDE.md build step 7) is putting a comment on the *right*
+The fiddly part (docs/ROADMAP.md build step 7) is putting a comment on the *right*
 line. GitHub's review-comment API accepts two addressing schemes:
 
 - modern: ``line`` (the file line number) + ``side`` (RIGHT for added lines);
@@ -11,7 +11,7 @@ only ever comment on lines that are actually part of the diff — anything else
 (no line, or a line outside the changed hunks) is routed to the summary comment
 instead, where it can't 422 the API.
 
-Routing policy (CLAUDE.md "route by confidence"): high/medium-confidence,
+Routing policy (docs/ROADMAP.md "route by confidence"): high/medium-confidence,
 mappable findings go inline; low-confidence or unmappable findings collapse into
 the summary so the bot stays quiet where it's least sure. Pure logic, no network.
 """

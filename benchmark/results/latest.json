@@ -1,0 +1,75 @@
+{
+  "backend": "claude-code",
+  "corpus": {
+    "samples": 24,
+    "sha256": "c02803b49a548785d4af94237d26dd5f374de5fd3c701678ccc781348abe28d8"
+  },
+  "generated_at": "2026-11-16T05:21:09.946523+00:00",
+  "models": {
+    "generator": "claude-sonnet-5",
+    "verifier": "claude-opus-4-8"
+  },
+  "modes": {
+    "generator_only": {
+      "calibration": {
+        "high": {
+          "correct": 4,
+          "findings": 6,
+          "precision": 0.6667
+        },
+        "low": {
+          "correct": 0,
+          "findings": 7,
+          "precision": 0.0
+        },
+        "medium": {
+          "correct": 11,
+          "findings": 24,
+          "precision": 0.4583
+        }
+      },
+      "metrics": {
+        "f1": 0.5769,
+        "false_positives_per_pr": 0.9167,
+        "fn": 0,
+        "fp": 22,
+        "precision": 0.4054,
+        "recall": 1.0,
+        "samples": 24,
+        "tn": 2,
+        "tp": 15
+      }
+    },
+    "generator_plus_verifier": {
+      "calibration": {
+        "high": {
+          "correct": 9,
+          "findings": 9,
+          "precision": 1.0
+        },
+        "low": {
+          "correct": 0,
+          "findings": 7,
+          "precision": 0.0
+        },
+        "medium": {
+          "correct": 5,
+          "findings": 7,
+          "precision": 0.7143
+        }
+      },
+      "metrics": {
+        "f1": 0.7368,
+        "false_positives_per_pr": 0.375,
+        "fn": 1,
+        "fp": 9,
+        "precision": 0.6087,
+        "recall": 0.9333,
+        "samples": 24,
+        "tn": 4,
+        "tp": 14
+      }
+    }
+  },
+  "tool_version": "0.1.0"
+}

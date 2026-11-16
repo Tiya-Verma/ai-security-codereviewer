@@ -6,9 +6,11 @@ find bugs" (everyone does that now); it's a **generator/verifier detection
 pipeline** measured against a **public, labeled benchmark** so there is a
 reproducible number for how often it is right.
 
-> **Status:** early scaffold (v0.1.0). The engine and benchmark harness are
-> stubbed and importable; prompts and corpus are being built out. See
-> [`CLAUDE.md`](./CLAUDE.md) for the full plan, milestones, and decisions.
+> **Status:** v0.1.0, pre-release. The generator/verifier pipeline runs end to
+> end on a 24-sample labeled corpus; on the first measured run the verifier
+> raised precision from 0.41 to 0.61 (F1 0.58 → 0.74) for one lost true
+> positive. Full table in [`benchmark/README.md`](./benchmark/README.md#results). See
+> [`docs/ROADMAP.md`](./docs/ROADMAP.md) for the full plan, milestones, and decisions.
 
 ## The core idea
 

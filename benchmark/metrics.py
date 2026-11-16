@@ -1,10 +1,10 @@
 """Benchmark scoring: precision, recall, F1, false-positives-per-PR, and
 confidence calibration. These are the published, versioned numbers that are
-the whole point of the project (CLAUDE.md "Metrics to publish").
+the whole point of the project (docs/ROADMAP.md "Metrics to publish").
 
 The "hit" definition is class-level by default (a finding counts as a true
 positive if it flags the correct CWE class anywhere in the sample's diff).
-This is an open decision in CLAUDE.md; it lives here as one function so it can
+This is an open decision in docs/ROADMAP.md; it lives here as one function so it can
 be swapped without touching the runner, and so the definition is auditable.
 """
 
@@ -113,7 +113,7 @@ def calibration(
     """Precision within each confidence bucket, across all findings.
 
     This is the check that confidence scoring is *meaningful* rather than
-    decorative (CLAUDE.md "Confidence calibration"): a well-calibrated system
+    decorative (docs/ROADMAP.md "Confidence calibration"): a well-calibrated system
     has higher precision in its "high" bucket than its "low" bucket. Operates
     at the finding level (not the sample level), since confidence is per finding.
     """
