@@ -7,7 +7,7 @@
 #
 # Target for v1: 100-300 samples, balanced across vuln classes, >=2-3 languages,
 # mixing OWASP Benchmark, real CVE-fix pairs, synthetic injections, and
-# deliberate false-positive traps. See CLAUDE.md "Benchmark Design".
+# deliberate false-positive traps. See docs/ROADMAP.md "Benchmark design".
 #
 # Current state (24 samples): Python + JavaScript + Go across 3 languages.
 #   - 14 synthetic samples (incl. 4 false-positive traps), matched pairs.
@@ -32,6 +32,10 @@
 #   language       primary language of the sample
 #   cve            CVE id (cve-sourced samples only)
 #   source_url     fix-commit URL the sample was transcribed from (cve only)
+#   context        full source files the change touches, at the sample's own
+#                  revision (pre-fix for positives, fix for negatives); used by
+#                  the `--context file` strategy. Fetched verbatim from GitHub.
+#   context_revision  repo tree URL the context files were fetched from
 
 # ---------- Python ----------
 
@@ -158,6 +162,9 @@
   language: javascript
   cve: CVE-2021-3807
   source_url: https://github.com/chalk/ansi-regex/commit/419250fa510bf31b4cc672e76537a64f9332e1f1
+  context_revision: https://github.com/chalk/ansi-regex/tree/0a8cc19946c03c38520fe8c086b8adb66f9cce0b
+  context:
+    - context/cve-2021-3807-ansi-regex-positive/index.js
 - id: cve-2021-3807-ansi-regex-negative
   diff: samples/cve_2021_3807_ansi_regex_redos_negative.diff
   is_vulnerable: false
@@ -166,6 +173,9 @@
   language: javascript
   cve: CVE-2021-3807
   source_url: https://github.com/chalk/ansi-regex/commit/419250fa510bf31b4cc672e76537a64f9332e1f1
+  context_revision: https://github.com/chalk/ansi-regex/tree/419250fa510bf31b4cc672e76537a64f9332e1f1
+  context:
+    - context/cve-2021-3807-ansi-regex-negative/index.js
 
 # CVE-2023-26136 — tough-cookie prototype pollution ({} index keyed by cookie domain).
 - id: cve-2023-26136-tough-cookie-positive
@@ -177,6 +187,9 @@
   language: javascript
   cve: CVE-2023-26136
   source_url: https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e
+  context_revision: https://github.com/salesforce/tough-cookie/tree/f06b72d1d447f33dfa6222c0a3c0c5e063558248
+  context:
+    - context/cve-2023-26136-tough-cookie-positive/lib/memstore.js
 - id: cve-2023-26136-tough-cookie-negative
   diff: samples/cve_2023_26136_tough_cookie_proto_pollution_negative.diff
   is_vulnerable: false
@@ -185,6 +198,9 @@
   language: javascript
   cve: CVE-2023-26136
   source_url: https://github.com/salesforce/tough-cookie/commit/12d474791bb856004e858fdb1c47b7608d09cf6e
+  context_revision: https://github.com/salesforce/tough-cookie/tree/12d474791bb856004e858fdb1c47b7608d09cf6e
+  context:
+    - context/cve-2023-26136-tough-cookie-negative/lib/memstore.js
 
 # CVE-2024-22195 — Jinja xmlattr filter HTML attribute injection (keys not validated).
 - id: cve-2024-22195-jinja-positive
@@ -196,6 +212,9 @@
   language: python
   cve: CVE-2024-22195
   source_url: https://github.com/pallets/jinja/commit/7dd3680e6eea0d77fde024763657aa4d884ddb23
+  context_revision: https://github.com/pallets/jinja/tree/d84a1743e4158733222105ff3b9c9d5da108868f
+  context:
+    - context/cve-2024-22195-jinja-positive/src/jinja2/filters.py
 - id: cve-2024-22195-jinja-negative
   diff: samples/cve_2024_22195_jinja_xmlattr_injection_negative.diff
   is_vulnerable: false
@@ -204,6 +223,9 @@
   language: python
   cve: CVE-2024-22195
   source_url: https://github.com/pallets/jinja/commit/7dd3680e6eea0d77fde024763657aa4d884ddb23
+  context_revision: https://github.com/pallets/jinja/tree/7dd3680e6eea0d77fde024763657aa4d884ddb23
+  context:
+    - context/cve-2024-22195-jinja-negative/src/jinja2/filters.py
 
 # CVE-2020-28483 — gin trusts client-supplied X-Forwarded-For (leftmost IP).
 # NVD tags this CWE-444, but the code behavior is IP spoofing; labeled CWE-348
@@ -217,6 +239,9 @@
   language: go
   cve: CVE-2020-28483
   source_url: https://github.com/gin-gonic/gin/commit/5929d521715610c9dd14898ebbe1d188d5de8937
+  context_revision: https://github.com/gin-gonic/gin/tree/21125bbb3f550dbfa4c64151f7e01f58dd64e2b8
+  context:
+    - context/cve-2020-28483-gin-positive/context.go
 - id: cve-2020-28483-gin-negative
   diff: samples/cve_2020_28483_gin_xff_ip_spoofing_negative.diff
   is_vulnerable: false
@@ -225,6 +250,9 @@
   language: go
   cve: CVE-2020-28483
   source_url: https://github.com/gin-gonic/gin/commit/5929d521715610c9dd14898ebbe1d188d5de8937
+  context_revision: https://github.com/gin-gonic/gin/tree/5929d521715610c9dd14898ebbe1d188d5de8937
+  context:
+    - context/cve-2020-28483-gin-negative/context.go
 
 # CVE-2020-26160 — jwt-go audience bypass (aud as []string skips the string check).
 - id: cve-2020-26160-jwt-go-positive
@@ -236,6 +264,10 @@
   language: go
   cve: CVE-2020-26160
   source_url: https://github.com/dgrijalva/jwt-go/commit/ec0a89a131e3e8567adcb21254a5cd20a70ea4ab
+  context_revision: https://github.com/dgrijalva/jwt-go/tree/32acca36b99f04b2b52d117d57bb17e17cbd35a8
+  context:
+    - context/cve-2020-26160-jwt-go-positive/claims.go
+    - context/cve-2020-26160-jwt-go-positive/map_claims.go
 - id: cve-2020-26160-jwt-go-negative
   diff: samples/cve_2020_26160_jwt_go_aud_bypass_negative.diff
   is_vulnerable: false
@@ -244,3 +276,8 @@
   language: go
   cve: CVE-2020-26160
   source_url: https://github.com/dgrijalva/jwt-go/commit/ec0a89a131e3e8567adcb21254a5cd20a70ea4ab
+  context_revision: https://github.com/dgrijalva/jwt-go/tree/ec0a89a131e3e8567adcb21254a5cd20a70ea4ab
+  context:
+    - context/cve-2020-26160-jwt-go-negative/claim_strings.go
+    - context/cve-2020-26160-jwt-go-negative/claims.go
+    - context/cve-2020-26160-jwt-go-negative/map_claims.go

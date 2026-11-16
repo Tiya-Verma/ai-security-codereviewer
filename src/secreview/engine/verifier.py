@@ -56,22 +56,23 @@ def verify_one(
     )
 
 
-def verify(
+def verify_all(
     client: StructuredClient,
     config: ReviewConfig,
     findings: list[Finding],
     context: str = "",
 ) -> list[VerifiedFinding]:
-    """Verify each finding and return only the upheld ones, each carrying its verdict."""
-    upheld: list[VerifiedFinding] = []
+    """Verify each finding and return all of them, upheld or not, each carrying
+    its verdict. Rejected verdicts are what the benchmark's error analysis reads."""
+    out: list[VerifiedFinding] = []
     for f in findings:
         verdict = verify_one(client, config, f, context)
-        if verdict.upheld:
-            # Let the verifier's (adversarial) confidence override the generator's.
-            upheld.append(
-                VerifiedFinding(
-                    **{**f.model_dump(), "confidence": verdict.confidence},
-                    verdict=verdict,
-                )
+        # Let the verifier's (adversarial) confidence override the generator's.
+        out.append(
+            VerifiedFinding(
+                **{**f.model_dump(), "confidence": verdict.confidence},
+                verdict=verdict,
             )
-    return upheld
+        )
+    return out
+

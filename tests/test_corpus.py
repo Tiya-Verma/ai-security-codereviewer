@@ -51,3 +51,25 @@ def test_cve_samples_have_provenance() -> None:
             assert str(e.get("source_url", "")).startswith("https://github.com/"), (
                 f"cve sample missing source_url: {e['id']}"
             )
+
+
+def test_context_files_exist_and_are_scoped() -> None:
+    # Context files (M3 `file` strategy) live under context/<sample-id>/ and must
+    # carry a source revision, so the extra code is as auditable as the diff.
+    for e in _ENTRIES:
+        for rel in e.get("context", []):
+            path = CORPUS / rel
+            assert path.is_file(), f"missing context file for {e['id']}: {rel}"
+            assert Path(rel).parts[:2] == ("context", e["id"]), (
+                f"context file outside context/{e['id']}/: {rel}"
+            )
+        if e.get("context"):
+            assert str(e.get("context_revision", "")).startswith("https://github.com/"), (
+                f"context without context_revision: {e['id']}"
+            )
+
+
+def test_no_orphan_context_files() -> None:
+    referenced = {(CORPUS / rel).resolve() for e in _ENTRIES for rel in e.get("context", [])}
+    on_disk = {p.resolve() for p in (CORPUS / "context").rglob("*") if p.is_file()}
+    assert on_disk - referenced == set(), "orphan context files not in manifest"

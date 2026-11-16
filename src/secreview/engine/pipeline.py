@@ -8,10 +8,10 @@ from __future__ import annotations
 from ..config import ReviewConfig
 from ..diff import parse_diff
 from ..llm import LLMClient, StructuredClient
-from ..models import Finding, ReviewResult
+from ..models import Finding, ReviewResult, VerifiedFinding
 from ..suppression import apply_suppressions
 from .generator import generate
-from .verifier import verify
+from .verifier import verify_all
 
 
 def review_diff(
@@ -36,8 +36,12 @@ def review_diff(
     if generator_findings is None:
         generator_findings = generate(client, config, changed, context)
 
+    final: list[Finding]
+    rejected: list[VerifiedFinding] = []
     if config.enable_verifier:
-        final = verify(client, config, list(generator_findings), context)
+        verified = verify_all(client, config, list(generator_findings), context)
+        final = [f for f in verified if f.verdict.upheld]
+        rejected = [f for f in verified if not f.verdict.upheld]
     else:
         final = list(generator_findings)
 
@@ -50,5 +54,6 @@ def review_diff(
     return ReviewResult(
         generator_findings=generator_findings,
         final_findings=final,
+        rejected_findings=rejected,
         suppressed_findings=[s.finding for s in suppressed],
     )

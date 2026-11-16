@@ -85,6 +85,9 @@ class ReviewResult(BaseModel):
 
     generator_findings: list[Finding] = Field(default_factory=list)
     final_findings: list[Finding] = Field(default_factory=list)
+    # Generator findings the verifier rejected, with its verdict — kept so the
+    # benchmark can show *why* a true positive was dropped.
+    rejected_findings: list[VerifiedFinding] = Field(default_factory=list)
     # Findings dropped by config-driven suppression (inline marker / baseline),
     # kept for transparency in the summary comment.
     suppressed_findings: list[Finding] = Field(default_factory=list)

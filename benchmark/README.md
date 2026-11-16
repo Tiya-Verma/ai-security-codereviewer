@@ -37,6 +37,28 @@ which backend produced them.
 python benchmark/run_benchmark.py --backend claude-code
 ```
 
+### Context strategies (M3)
+
+`--context diff` (default) shows the model only the diff. `--context file` adds
+the full source file(s) the change touches, at the same revision, from the
+sample's `context` entries in the manifest — the pre-fix revision for a
+positive, the fix revision for a negative, fetched verbatim from GitHub with
+the tree URL recorded in `context_revision`. Only the real CVE samples have
+context files; synthetic samples have no surrounding repo, so they run
+diff-only under either strategy.
+
+```bash
+python benchmark/run_benchmark.py --backend claude-code --context file
+python benchmark/compare.py results/<diff-run>.json results/<file-run>.json
+```
+
+`compare.py` re-scores runs from their per-sample records, over the whole
+corpus and over only the samples that had context, where the strategies differ.
+
+Every result file also stores per-sample detail: each finding the generator
+surfaced, whether it matched the label, and the verifier's verdict on it —
+including the reasoning for findings it rejected.
+
 Each sample runs through the generator **once**; both columns are scored from
 that same output (the verifier column re-checks it), so the delta between
 modes is the verifier's effect rather than run-to-run generator noise.

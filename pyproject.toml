@@ -39,6 +39,8 @@ packages = ["src/secreview"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Corpus context files are vendored verbatim from upstream repos; never reformat them.
+extend-exclude = ["benchmark/corpus"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]

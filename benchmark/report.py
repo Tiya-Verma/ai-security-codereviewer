@@ -43,20 +43,25 @@ def build_report(
     generator_plus_verifier: dict,
     generated_at: str,
     backend: str = "api",
+    context: str = "diff",
+    samples: list[dict] | None = None,
 ) -> dict:
     """Assemble the versioned results record. `generated_at` is passed in (not
     stamped here) so the report is deterministic and testable. `backend` records
-    how the models were called (Messages API vs. headless Claude Code)."""
+    how the models were called (Messages API vs. headless Claude Code), `context`
+    the context strategy, and `samples` the per-sample findings and verdicts."""
     return {
         "tool_version": tool_version,
         "generated_at": generated_at,
         "backend": backend,
+        "context": context,
         "models": models,
         "corpus": corpus,
         "modes": {
             "generator_only": generator_only,
             "generator_plus_verifier": generator_plus_verifier,
         },
+        "samples": samples or [],
     }
 
 
@@ -73,6 +78,7 @@ def render_markdown(report: dict) -> str:
         f"generator `{models.get('generator', '?')}` · "
         f"verifier `{models.get('verifier', '?')}` · "
         f"backend `{report.get('backend', 'api')}` · "
+        f"context `{report.get('context', 'diff')}` · "
         f"corpus {corpus.get('samples', '?')} samples "
         f"(sha `{str(corpus.get('sha256', '?'))[:8]}`) · "
         f"generated {report['generated_at']}_"
@@ -105,9 +111,11 @@ def write_report(results_dir: str | Path, report: dict) -> tuple[Path, Path]:
     d = Path(results_dir)
     d.mkdir(parents=True, exist_ok=True)
 
-    # Version-stamp: tool version + date portion of the (ISO) timestamp.
-    date_part = str(report["generated_at"])[:10]
-    versioned = d / f"results-v{report['tool_version']}-{date_part}.json"
+    # Version-stamp: tool version, context strategy and a compact UTC timestamp,
+    # so several runs on one day (e.g. one per context strategy) don't collide.
+    stamp = "".join(c for c in str(report["generated_at"])[:19] if c.isalnum())
+    context = report.get("context", "diff")
+    versioned = d / f"results-v{report['tool_version']}-{context}-{stamp}.json"
     latest = d / "latest.json"
 
     payload = json.dumps(report, indent=2, sort_keys=True)

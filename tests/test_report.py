@@ -65,7 +65,7 @@ def test_render_markdown_contains_tables() -> None:
     assert "Generator only" in md and "Generator + Verifier" in md
     assert "Confidence calibration" in md
     assert "claude-opus-4-8" in md  # provenance line
-    assert "backend `api`" in md
+    assert "backend `api`" in md and "context `diff`" in md
     assert "deadbeef" in md  # short corpus sha
 
 
@@ -73,6 +73,6 @@ def test_write_report_persists_latest_and_versioned(tmp_path: Path) -> None:
     r = _example_report()
     latest, versioned = write_report(tmp_path, r)
     assert latest.name == "latest.json"
-    assert versioned.name == "results-v0.1.0-2026-09-19.json"
+    assert versioned.name == "results-v0.1.0-diff-20260919T000000.json"
     # Both are valid JSON and equal.
     assert json.loads(latest.read_text()) == json.loads(versioned.read_text()) == r
