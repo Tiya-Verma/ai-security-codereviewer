@@ -10,7 +10,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from ..config import ReviewConfig
-from ..diff import ChangedFile
+from ..diff import ChangedFile, render_changed
 from ..llm import StructuredClient
 from ..models import Finding
 
@@ -39,8 +39,7 @@ def generate(
     if config.scan_instructions:
         system += f"\n\nProject-specific scan instructions:\n{config.scan_instructions}"
 
-    diff_blob = "\n\n".join(f"--- {cf.path} ---\n{cf.patch_text}" for cf in changed)
-    user = f"Review this diff for security vulnerabilities.\n\n{diff_blob}"
+    user = f"Review this diff for security vulnerabilities.\n\n{render_changed(changed)}"
     if context:
         user += f"\n\nAdditional repository context:\n{context}"
 

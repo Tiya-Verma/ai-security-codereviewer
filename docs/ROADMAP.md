@@ -32,9 +32,9 @@ PR opened/updated
 | | Milestone | Status |
 |---|---|---|
 | M0 | Scaffold, starter corpus (20–30 samples) | ✅ 24 samples, Python/JS/Go; OWASP cases TODO |
-| M1 | Generator-only baseline recorded | ✅ first run, see [results](../benchmark/README.md#results) |
-| M2 | Verifier pass, before/after comparison | ✅ first run, same table |
-| M3 | Context strategy tuned (diff-only vs. expanded), re-benchmarked | ⬜ next |
+| M1 | Generator-only baseline recorded | ✅ see [results](../benchmark/README.md#results) |
+| M2 | Verifier pass, before/after comparison | ✅ re-run after giving the verifier the diff |
+| M3 | Context strategy tuned (diff-only vs. expanded), re-benchmarked | 🟡 `diff` vs. `file` compared, no clear winner at n=10; revisit after M4 |
 | M4 | Corpus grown to 100–300 samples, labels double-checked | ⬜ |
 | M5 | Packaged as a GitHub Action, posting inline comments on a test repo | 🟡 line mapping + routing done; `action.yml` TODO |
 | M6 | Config + suppression system | ✅ inline marker + baseline allowlist |

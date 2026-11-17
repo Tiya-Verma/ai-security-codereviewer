@@ -80,3 +80,9 @@ def parse_diff(diff_text: str, ignore_paths: list[str] | None = None) -> list[Ch
         )
 
     return result
+
+
+def render_changed(changed: list[ChangedFile]) -> str:
+    """The diff text shown to the model, one block per changed file. Shared by
+    the generator and verifier so both passes judge exactly the same code."""
+    return "\n\n".join(f"--- {cf.path} ---\n{cf.patch_text}" for cf in changed)

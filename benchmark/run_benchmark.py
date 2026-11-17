@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -33,6 +34,7 @@ from secreview.models import Finding, ReviewResult
 CORPUS_DIR = Path(__file__).parent / "corpus"
 MANIFEST = CORPUS_DIR / "manifest.yml"
 RESULTS_DIR = Path(__file__).parent / "results"
+ENGINE_DIR = Path(__file__).parent.parent / "src" / "secreview"
 
 # Context strategies (M3). `diff` = the diff alone; `file` = the diff plus the
 # full source file(s) it touches, at the same revision, from the sample's
@@ -100,19 +102,59 @@ def sample_record(
     }
 
 
-def run_both_modes(
-    corpus: list[tuple[Sample, str, str]], config: ReviewConfig, client: StructuredClient
-) -> tuple[ScoredRun, ScoredRun, list[dict]]:
-    """Run each sample once through the generator, then score that same output
-    with and without the verifier. Sharing one generator run per sample means
-    the delta between modes is the verifier's effect, not run-to-run noise.
-    Keeps per-sample findings (needed for calibration and error analysis)."""
+def record_findings(record: dict, key: str) -> list[Finding]:
+    """Rebuild the findings stored under `key` in a per-sample record."""
+    return [
+        Finding.model_validate({k: v for k, v in f.items() if k not in ("hit", "verdict")})
+        for f in record[key]
+    ]
+
+
+def checkpoint_path(context: str, backend: str, config: ReviewConfig) -> Path:
+    """Where a run's finished samples are saved as they complete. Keyed by
+    everything that changes the output — including the engine source, so a
+    resume never mixes samples from before and after a pipeline change."""
+    engine = hashlib.sha256()
+    for path in sorted(ENGINE_DIR.rglob("*.py")):
+        engine.update(path.read_bytes())
+    key = json.dumps(
+        [context, backend, config.models.model_dump(), corpus_sha256(), engine.hexdigest()],
+        sort_keys=True,
+    )
+    digest = hashlib.sha256(key.encode()).hexdigest()[:12]
+    return RESULTS_DIR / ".partial" / f"{context}-{backend}-{digest}.jsonl"
+
+
+def _load_checkpoint(path: Path | None) -> dict[str, dict]:
+    if path is None or not path.exists():
+        return {}
+    records = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    return {r["id"]: r for r in records}
+
+
+def run_corpus(
+    corpus: list[tuple[Sample, str, str]],
+    config: ReviewConfig,
+    client: StructuredClient,
+    checkpoint: Path | None = None,
+) -> list[dict]:
+    """Run each sample once through the generator, then verify that same output.
+    Sharing one generator run per sample means the delta between modes is the
+    verifier's effect, not run-to-run noise.
+
+    Each finished sample is appended to `checkpoint`; samples already in it are
+    skipped, so a stopped run resumes where it left off."""
     gen_config = config.model_copy(update={"enable_verifier": False})
     verify_config = config.model_copy(update={"enable_verifier": True})
-    gen_run: ScoredRun = []
-    verify_run: ScoredRun = []
+    done = _load_checkpoint(checkpoint)
+    if checkpoint is not None:
+        checkpoint.parent.mkdir(parents=True, exist_ok=True)
     records: list[dict] = []
     for i, (sample, diff_text, context) in enumerate(corpus, 1):
+        if sample.id in done:
+            records.append(done[sample.id])
+            print(f"  [{i}/{len(corpus)}] {sample.id}: resumed from checkpoint", flush=True)
+            continue
         gen = review_diff(diff_text, config=gen_config, client=client, context=context)
         verified = review_diff(
             diff_text,
@@ -121,15 +163,27 @@ def run_both_modes(
             context=context,
             generator_findings=gen.generator_findings,
         )
-        gen_run.append((sample, gen.final_findings))
-        verify_run.append((sample, verified.final_findings))
-        records.append(sample_record(sample, bool(context), gen, verified))
+        record = sample_record(sample, bool(context), gen, verified)
+        if checkpoint is not None:
+            with checkpoint.open("a") as fh:
+                fh.write(json.dumps(record) + "\n")
+        records.append(record)
         print(
             f"  [{i}/{len(corpus)}] {sample.id}: "
             f"{len(gen.final_findings)} generated, {len(verified.final_findings)} upheld",
             flush=True,
         )
-    return gen_run, verify_run, records
+    return records
+
+
+def scored_runs(
+    corpus: list[tuple[Sample, str, str]], records: list[dict]
+) -> tuple[ScoredRun, ScoredRun]:
+    """(generator-only, generator+verifier) findings per sample, from the records."""
+    by_id = {r["id"]: r for r in records}
+    gen_run = [(s, record_findings(by_id[s.id], "generator_only")) for s, _, _ in corpus]
+    verify_run = [(s, record_findings(by_id[s.id], "upheld")) for s, _, _ in corpus]
+    return gen_run, verify_run
 
 
 def make_client(backend: str) -> StructuredClient:
@@ -161,6 +215,11 @@ def main() -> None:
         help="diff = diff only; file = diff + full source files from each sample's "
         "`context` entries (samples without them stay diff-only).",
     )
+    ap.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Ignore any checkpoint from an interrupted run and start over.",
+    )
     args = ap.parse_args()
 
     corpus = load_corpus(limit=args.limit, context=args.context)
@@ -174,7 +233,11 @@ def main() -> None:
         f"Running {len(corpus)} sample(s) in both modes via {args.backend}, "
         f"context={args.context}..."
     )
-    gen_run, verify_run, records = run_both_modes(corpus, config, client)
+    checkpoint = checkpoint_path(args.context, args.backend, config)
+    if args.fresh:
+        checkpoint.unlink(missing_ok=True)
+    records = run_corpus(corpus, config, client, checkpoint)
+    gen_run, verify_run = scored_runs(corpus, records)
     gen_only = summarize(gen_run)
     gen_verify = summarize(verify_run)
 
@@ -190,6 +253,9 @@ def main() -> None:
         samples=records,
     )
     latest, versioned = write_report(RESULTS_DIR, report)
+    # A --limit run is a subset; keep its checkpoint so the full run can reuse it.
+    if args.limit is None:
+        checkpoint.unlink(missing_ok=True)
 
     print()
     print(render_markdown(report))

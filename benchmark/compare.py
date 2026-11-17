@@ -15,8 +15,7 @@ import json
 from pathlib import Path
 
 from metrics import Sample, aggregate, score  # sibling module
-
-from secreview.models import Finding
+from run_benchmark import record_findings  # sibling module
 
 _MODES = (("generator_only", "gen"), ("upheld", "gen+verify"))
 _ROWS = ("precision", "recall", "f1", "false_positives_per_pr", "tp", "fp", "fn")
@@ -26,11 +25,7 @@ def _rescore(records: list[dict], key: str) -> dict:
     per_sample = []
     for r in records:
         sample = Sample(id=r["id"], is_vulnerable=r["is_vulnerable"], cwe=r["cwe"])
-        findings = [
-            Finding.model_validate({k: v for k, v in f.items() if k not in ("hit", "verdict")})
-            for f in r[key]
-        ]
-        per_sample.append(score(sample, findings))
+        per_sample.append(score(sample, record_findings(r, key)))
     return aggregate(per_sample).as_dict()
 
 

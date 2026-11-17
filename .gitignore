@@ -24,6 +24,7 @@ coverage.xml
 
 # Benchmark run artifacts (results are versioned intentionally; scratch runs are not)
 benchmark/results/*.local.json
+benchmark/results/.partial/
 benchmark/.cache/
 
 # Editor / OS

@@ -26,6 +26,7 @@ def verify_one(
     client: StructuredClient,
     config: ReviewConfig,
     finding: Finding,
+    diff_text: str,
     context: str = "",
 ) -> Verdict:
     system = _SYSTEM
@@ -43,6 +44,7 @@ def verify_one(
         f"Severity: {finding.severity.value}\n"
         f"CWE: {finding.cwe}\n"
         f"Description: {finding.description}\n"
+        f"\nThe diff the finding was raised against:\n{diff_text}\n"
     )
     if context:
         user += f"\nAdditional repository context:\n{context}"
@@ -60,13 +62,14 @@ def verify_all(
     client: StructuredClient,
     config: ReviewConfig,
     findings: list[Finding],
+    diff_text: str,
     context: str = "",
 ) -> list[VerifiedFinding]:
     """Verify each finding and return all of them, upheld or not, each carrying
     its verdict. Rejected verdicts are what the benchmark's error analysis reads."""
     out: list[VerifiedFinding] = []
     for f in findings:
-        verdict = verify_one(client, config, f, context)
+        verdict = verify_one(client, config, f, diff_text, context)
         # Let the verifier's (adversarial) confidence override the generator's.
         out.append(
             VerifiedFinding(

@@ -6,7 +6,7 @@ layered on by callers (CLI / Action) once findings exist.
 from __future__ import annotations
 
 from ..config import ReviewConfig
-from ..diff import parse_diff
+from ..diff import parse_diff, render_changed
 from ..llm import LLMClient, StructuredClient
 from ..models import Finding, ReviewResult, VerifiedFinding
 from ..suppression import apply_suppressions
@@ -39,7 +39,9 @@ def review_diff(
     final: list[Finding]
     rejected: list[VerifiedFinding] = []
     if config.enable_verifier:
-        verified = verify_all(client, config, list(generator_findings), context)
+        verified = verify_all(
+            client, config, list(generator_findings), render_changed(changed), context
+        )
         final = [f for f in verified if f.verdict.upheld]
         rejected = [f for f in verified if not f.verdict.upheld]
     else:

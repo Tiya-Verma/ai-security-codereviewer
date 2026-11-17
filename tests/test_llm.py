@@ -99,3 +99,22 @@ def test_review_diff_reuses_supplied_generator_findings() -> None:
     assert result.generator_findings == [finding]
     assert [f.title for f in result.final_findings] == ["SQLi"]
     assert result.final_findings[0].confidence == Confidence.HIGH
+
+
+class _RecordingVerifier:
+    def __init__(self) -> None:
+        self.prompts: list[str] = []
+
+    def structured(self, *, schema_model, user, **_):
+        self.prompts.append(user)
+        return Verdict(upheld=True, confidence=Confidence.HIGH, rationale="r")
+
+
+def test_verifier_is_shown_the_diff() -> None:
+    # Regression: the verifier used to see only the finding's own description,
+    # so it judged code it had never been shown.
+    finding = Finding(file="app.py", line=2, title="SQLi", description="d",
+                      severity=Severity.HIGH, cwe="CWE-89")
+    client = _RecordingVerifier()
+    review_diff(DIFF, config=ReviewConfig(), client=client, generator_findings=[finding])
+    assert 'cur.execute("SELECT * FROM t WHERE id=" + uid)' in client.prompts[0]

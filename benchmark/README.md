@@ -59,6 +59,12 @@ Every result file also stores per-sample detail: each finding the generator
 surfaced, whether it matched the label, and the verifier's verdict on it —
 including the reasoning for findings it rejected.
 
+Runs are resumable: each finished sample is saved to
+`results/.partial/<context>-<backend>-<key>.jsonl` (git-ignored), and re-running
+the same command skips samples already there. The checkpoint is keyed by context
+strategy, backend, models and corpus hash, so changing any of them starts a new
+run. `--fresh` discards the checkpoint and starts over.
+
 Each sample runs through the generator **once**; both columns are scored from
 that same output (the verifier column re-checks it), so the delta between
 modes is the verifier's effect rather than run-to-run generator noise.
@@ -70,21 +76,21 @@ tagged with the tool version, model ids, and a corpus hash for traceability.
 
 ## Results
 
-> First measured run: one pass over the 24-sample corpus. With n=24 and a single
-> run, treat these as a baseline, not a precise estimate — re-run before quoting
-> small deltas. Regenerate with `run_benchmark.py` (`report.render_markdown`).
+> Fixed pipeline, default `diff` context strategy, one pass over the 24-sample
+> corpus. With n=24 and a single run, treat these as a baseline, not a precise
+> estimate. Regenerate with `run_benchmark.py` (`report.render_markdown`).
 
-_Tool `secreview` v0.1.0 · generator `claude-sonnet-5` · verifier `claude-opus-4-8` · backend `claude-code` · corpus 24 samples (sha `c02803b4`) · generated 2026-11-16T05:21:09.946523+00:00_
+_Tool `secreview` v0.1.0 · generator `claude-sonnet-5` · verifier `claude-opus-4-8` · backend `claude-code` · context `diff` · corpus 24 samples (sha `fba95703`) · generated 2026-11-17T12:17:06.500441+00:00_
 
 | Metric | Generator only | Generator + Verifier |
 |---|---|---|
-| Precision | 0.4054 | 0.6087 |
-| Recall | 1.0 | 0.9333 |
-| F1 | 0.5769 | 0.7368 |
-| False positives / PR | 0.9167 | 0.375 |
-| True positives | 15 | 14 |
-| False positives | 22 | 9 |
-| False negatives | 0 | 1 |
+| Precision | 0.3333 | 0.619 |
+| Recall | 0.9333 | 0.8667 |
+| F1 | 0.4912 | 0.7222 |
+| False positives / PR | 1.1667 | 0.3333 |
+| True positives | 14 | 13 |
+| False positives | 28 | 8 |
+| False negatives | 1 | 2 |
 
 The generator-only column is the high-recall baseline; the delta to the
 generator+verifier column is the proof the adversarial pass buys precision.
@@ -96,9 +102,53 @@ precise than `low`.
 
 | Confidence | Findings | Precision |
 |---|---|---|
-| high | 9 | 1.0 |
-| medium | 7 | 0.7143 |
-| low | 7 | 0.0 |
+| high | 15 | 0.8 |
+| medium | 3 | 0.3333 |
+| low | 3 | 0.0 |
+
+### Context strategy: `diff` vs. `file` (M3)
+
+Same fixed pipeline, run in parallel. Only the 10 CVE samples have context
+files, so the second table isolates where the strategies differ.
+
+#### All samples
+
+| Metric | diff gen | diff gen+verify | file gen | file gen+verify |
+|---|---|---|---|---|
+| precision | 0.3333 | 0.619 | 0.359 | 0.5833 |
+| recall | 0.9333 | 0.8667 | 0.9333 | 0.9333 |
+| f1 | 0.4912 | 0.7222 | 0.5185 | 0.7179 |
+| false_positives_per_pr | 1.1667 | 0.3333 | 1.0417 | 0.4167 |
+| tp | 14 | 13 | 14 | 14 |
+| fp | 28 | 8 | 25 | 10 |
+| fn | 1 | 2 | 1 | 1 |
+
+#### Samples with context files (10)
+
+| Metric | diff gen | diff gen+verify | file gen | file gen+verify |
+|---|---|---|---|---|
+| precision | 0.1379 | 0.375 | 0.16 | 0.3636 |
+| recall | 0.8 | 0.6 | 0.8 | 0.8 |
+| f1 | 0.2353 | 0.4615 | 0.2667 | 0.5 |
+| false_positives_per_pr | 2.5 | 0.5 | 2.1 | 0.7 |
+| tp | 4 | 3 | 4 | 4 |
+| fp | 25 | 5 | 21 | 7 |
+| fn | 1 | 2 | 1 | 1 |
+
+**Reading:** no clear winner at this sample size. Overall F1 is the same
+(0.72 vs. 0.72). On the CVE samples, `file` recovered one extra true positive
+(ansi-regex: with only the diff, the verifier mistook the vulnerable regex for
+the patched one) but upheld two more false positives, and it cost about twice
+as much ($7.77 vs. $3.97 at API rates). Every difference is one or two samples,
+within single-run noise, so `diff` stays the default until a larger CVE corpus
+(M4) and repeated runs can separate them.
+
+### Known issue: verifier was blind before 2026-11-17
+
+Earlier versions passed the verifier only the generator's description of a
+finding, not the code. The 2026-11-16 run (`results-v0.1.0-2026-11-16.json`)
+was produced that way; its numbers happened to look similar, but a second run
+of the same pipeline scored F1 0.56, so those numbers are not reliable. All results above come from the fixed pipeline.
 
 ## Corpus sourcing (mix sources; don't rely on one)
 
