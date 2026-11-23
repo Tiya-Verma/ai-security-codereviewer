@@ -19,6 +19,7 @@ from pathlib import Path
 import click
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 from . import __version__
 from .config import ReviewConfig
@@ -73,10 +74,13 @@ def _print_table(result: ReviewResult, show_rejected: bool = False) -> None:
             title_style="dim",
         )
         rejected.add_column("CWE", style="dim")
-        rejected.add_column("Title", style="dim strike")
+        rejected.add_column("Title", style="dim")
         rejected.add_column("Why it's safe", style="dim")
         for f in result.rejected_findings:
-            rejected.add_row(f.cwe or "-", f.title, short_rationale(f.verdict.rationale))
+            # Strike a span, not the column or Text base style: either of
+            # those would also strike the cell's wrap padding.
+            title = Text().append(f.title, style="strike")
+            rejected.add_row(f.cwe or "-", title, short_rationale(f.verdict.rationale))
         console.print(rejected)
 
     if result.suppressed_findings:
