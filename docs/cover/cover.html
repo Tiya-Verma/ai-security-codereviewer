@@ -1,0 +1,337 @@
+<!doctype html>
+<!--
+  Portfolio card cover: animates the generator -> verifier mechanism on a real
+  recorded benchmark sample (cve-2024-22195-jinja-positive, diff context,
+  results-v0.1.0-diff-20261117T121706.json) and the run's headline metrics.
+
+  Two layouts: the default keeps content high for the portfolio card (whose
+  lower half sits under a title blur); ?layout=page centres it for the
+  project-page hero. Open in a browser to preview (loops live). render.mjs seeks the timeline
+  frame by frame for a deterministic video. Canvas is 1440x900 (16:10),
+  captured at 2x like the other portfolio screen recordings.
+
+  Type follows Apple's macOS ramp: Title 22, Headline/Body 15, Subheadline 13,
+  Caption 12/11, Regular + Semibold only, 8-pt spacing grid, system label and
+  separator colors. Key content stays in the top ~60%: the portfolio card
+  blurs the bottom of the video under its title.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>secreview cover</title>
+<style>
+  :root {
+    --label: #1d1d1f;
+    --secondary: rgba(60, 60, 67, 0.62);
+    --tertiary: rgba(60, 60, 67, 0.36);
+    --separator: rgba(60, 60, 67, 0.12);
+    --fill: rgba(120, 120, 128, 0.10);
+    --window: #f5f5f7;
+    --surface: #ffffff;
+    --blue: #007aff; --blue-tint: rgba(0, 122, 255, 0.10); /* Apple systemBlue */
+    --red: #d70015;    --red-tint: rgba(255, 59, 48, 0.10);
+    --orange: #c93400; --orange-tint: rgba(255, 149, 0, 0.12);
+    --green: #248a3d;  --green-tint: rgba(52, 199, 89, 0.12);
+    --add: rgba(52, 199, 89, 0.07);
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    --r-card: 12px; --r-pill: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1440px; height: 900px; overflow: hidden; background: var(--window); }
+  body { font: 400 15px/20px var(--sans); color: var(--label); -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em; }
+
+  /* type ramp */
+  .title    { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.02em; }
+  .headline { font-size: 15px; line-height: 20px; font-weight: 600; }
+  .sub      { font-size: 13px; line-height: 16px; color: var(--secondary); letter-spacing: 0; }
+  .caption  { font-size: 12px; line-height: 16px; color: var(--tertiary); letter-spacing: 0; }
+  .num      { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.02em;
+              font-variant-numeric: tabular-nums; }
+
+  header { position: absolute; inset: 0 0 auto 0; height: 52px; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px; background: rgba(255,255,255,0.8);
+    border-bottom: 1px solid var(--separator); }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0; }
+  .brand i { width: 18px; height: 18px; border-radius: 5px; background: var(--blue); position: relative; }
+  .brand i::after { content: "</>"; position: absolute; inset: 0; color: #fff; text-align: center;
+    font: 600 8px/18px var(--mono); font-style: normal; }
+
+  .stage { position: absolute; top: 52px; left: 0; right: 0; bottom: 0; }
+  /* The 960px content block is laid out at 1x, then zoomed as a unit so the
+     type ramp keeps its proportions. Offsets are in pre-zoom px (zoom scales
+     them too): left = (1440 - 960 * zoom) / 2 / zoom. */
+  .wrap { position: absolute; width: 960px; zoom: 1.15; left: 146px; top: 21px; }
+  /* ?layout=page: centre the content block for the project page hero, which
+     has no title blur over its lower half (the card layout keeps it high). */
+  .page .wrap { zoom: 1.3; left: 74px; }
+  .page #sceneA .wrap { top: 121px; }
+  .page #sceneB .wrap { top: 138px; }
+  .heading { display: flex; justify-content: space-between; align-items: flex-end; }
+  .heading .sub { margin-top: 4px; }
+
+  /* ---------- scene A ---------- */
+  .cols { position: absolute; top: 72px; left: 0; width: 960px; display: flex; gap: 24px; }
+  .code { width: 540px; flex: none; background: var(--surface); border-radius: var(--r-card);
+    box-shadow: 0 0 0 1px var(--separator); overflow: hidden; }
+  .code .file { height: 40px; display: flex; align-items: center; gap: 6px; padding: 0 16px;
+    border-bottom: 1px solid var(--separator); }
+  .code .file b { font: 600 12px/16px var(--mono); color: var(--label); letter-spacing: 0; }
+  .lines { position: relative; padding: 8px 0; }
+  .ln { position: relative; height: 28px; display: flex; align-items: center; background: var(--add);
+    font: 400 13px/28px var(--mono); letter-spacing: 0; white-space: pre; }
+  .ln .n { flex: none; width: 48px; padding-right: 12px; text-align: right; color: var(--tertiary); }
+  .ln .p { flex: none; width: 16px; color: var(--green); }
+  .ln .t { min-width: 0; overflow: hidden; }
+  .ln.ctx { background: none; } .ln.ctx .t { color: var(--tertiary); }
+  .scan { position: absolute; left: 0; right: 0; top: 8px; height: 28px; z-index: 1; background: var(--blue-tint); }
+  .hit { position: absolute; left: 0; right: 0; top: 36px; height: 28px; z-index: 1; background: var(--red-tint);
+    box-shadow: inset 2px 0 0 var(--red); }
+  .marker { position: absolute; right: 12px; top: 41px; z-index: 2; height: 18px; padding: 0 6px;
+    border-radius: 5px; background: var(--red); color: #fff; font: 600 11px/18px var(--sans); letter-spacing: 0; }
+
+  .rail { flex: 1; position: relative; }
+  .steps { display: flex; align-items: center; gap: 12px; height: 20px; }
+  .step { position: relative; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;
+    color: var(--tertiary); letter-spacing: 0; }
+  .step .dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor;
+    font: 600 11px/18px var(--sans); text-align: center; }
+  .step .on { position: absolute; inset: 0; display: flex; align-items: center; gap: 6px; color: var(--blue); }
+  .step .on .dot { background: var(--blue); color: #fff; box-shadow: none; }
+  .track-line { flex: 1; height: 2px; border-radius: 1px; background: var(--separator); position: relative; }
+  .track-line span { position: absolute; inset: 0; background: var(--blue); transform-origin: left; }
+  .caption-swap { position: relative; height: 16px; margin-top: 8px; }
+  .caption-swap span { position: absolute; left: 0; top: 0; white-space: nowrap; }
+
+  .card { position: absolute; left: 0; right: 0; height: 96px; padding: 16px; background: var(--surface);
+    border-radius: var(--r-card); box-shadow: 0 0 0 1px var(--separator); }
+  .card .ring { position: absolute; inset: 0; border-radius: var(--r-card);
+    box-shadow: 0 0 0 2px var(--blue), 0 0 0 6px var(--blue-tint); }
+  .meta { display: flex; align-items: center; gap: 8px; }
+  .pill { height: 18px; padding: 0 6px; border-radius: var(--r-pill); font: 600 11px/18px var(--sans); letter-spacing: 0.02em; }
+  .high { background: var(--red-tint); color: var(--red); }
+  .low { background: var(--orange-tint); color: var(--orange); }
+  .cwe { font: 400 12px/16px var(--mono); color: var(--secondary); letter-spacing: 0; }
+  .card .headline { position: relative; display: inline-block; margin-top: 8px; }
+  .strike { position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: var(--secondary); transform-origin: left; }
+  .status { position: relative; height: 16px; margin-top: 6px; }
+  .status span { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 13px; line-height: 16px; letter-spacing: 0; }
+  .s-wait { color: var(--tertiary); } .s-check { color: var(--blue); }
+  .s-up { color: var(--green); font-weight: 600; } .s-rej { color: var(--secondary); font-weight: 600; }
+  .s-up em, .s-rej em { font-style: normal; font-weight: 400; color: var(--secondary); }
+  .summary { position: absolute; left: 0; top: 280px; display: flex; gap: 8px; }
+  .chip { height: 24px; padding: 0 10px; border-radius: 12px; font: 600 12px/24px var(--sans); letter-spacing: 0; }
+  .chip.g { background: var(--green-tint); color: var(--green); }
+  .chip.n { background: var(--fill); color: var(--secondary); }
+
+  /* ---------- scene B ---------- */
+  .legend { display: flex; gap: 16px; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend i { width: 8px; height: 8px; border-radius: 2px; }
+  .legend .faint { background: rgba(60, 60, 67, 0.22); } .legend .solid { background: rgba(60, 60, 67, 0.62); }
+  .legend .scale { width: 48px; height: 6px; border-radius: 3px;
+    background: linear-gradient(to right, #34c759, #ff9500, #ff3b30); }
+  .metrics { position: absolute; top: 72px; left: 0; width: 960px; background: var(--surface);
+    border-radius: var(--r-card); box-shadow: 0 0 0 1px var(--separator); }
+  .row { display: flex; align-items: center; height: 80px; padding: 0 24px; }
+  .row + .row { border-top: 1px solid var(--separator); }
+  .row .lab { width: 240px; }
+  .row .lab .sub { margin-top: 2px; }
+  .row .nums { width: 240px; display: flex; align-items: baseline; gap: 8px; }
+  .row .from { opacity: 0.55; }
+  .row .arrow { font-size: 15px; color: var(--tertiary); }
+  .row .bars { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--fill); position: relative; overflow: hidden; }
+  .bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; transform-origin: left; }
+  /* series: generator-only is a faint tint, with-verifier is solid; colour = safety of the value */
+  .gen { opacity: 0.3; }
+  .foot { position: absolute; top: 328px; left: 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><i></i>secreview</div>
+  <div class="sub">Generator → Verifier</div>
+</header>
+
+<section class="stage" id="sceneA">
+  <div class="wrap">
+    <div class="heading">
+      <div><div class="title">Pull request review</div>
+        <div class="sub">Jinja2 · xmlattr filter, before the CVE-2024-22195 fix</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="code" id="code">
+        <div class="file"><span class="sub">filters.py</span><b>do_xmlattr()</b></div>
+        <div class="lines">
+          <div class="scan" id="scan"></div>
+          <div class="hit" id="hit"></div>
+          <div class="marker" id="marker">CWE-79</div>
+          <div class="ln"><span class="n">19</span><span class="p">+</span><span class="t">rv = " ".join(</span></div>
+          <div class="ln"><span class="n">20</span><span class="p">+</span><span class="t">    f'{escape(key)}="{escape(value)}"'</span></div>
+          <div class="ln"><span class="n">21</span><span class="p">+</span><span class="t">    for key, value in d.items()</span></div>
+          <div class="ln"><span class="n">22</span><span class="p">+</span><span class="t">    if value is not None and not isinstance(value, Undefined)</span></div>
+          <div class="ln"><span class="n">23</span><span class="p">+</span><span class="t">)</span></div>
+          <div class="ln"><span class="n">24</span><span class="p">+</span><span class="t"></span></div>
+          <div class="ln"><span class="n">25</span><span class="p">+</span><span class="t">if autospace and rv:</span></div>
+          <div class="ln"><span class="n">26</span><span class="p">+</span><span class="t">    rv = " " + rv</span></div>
+          <div class="ln ctx"><span class="n"></span><span class="p"></span><span class="t">⋯ diff ends here</span></div>
+        </div>
+      </div>
+
+      <div class="rail">
+        <div class="steps">
+          <div class="step"><span class="dot">1</span>Generator
+            <div class="on" id="on1"><span class="dot">1</span>Generator</div></div>
+          <div class="track-line"><span id="link"></span></div>
+          <div class="step"><span class="dot">2</span>Verifier
+            <div class="on" id="on2"><span class="dot">2</span>Verifier</div></div>
+        </div>
+        <div class="caption-swap sub">
+          <span id="cap1">Proposes every candidate it can find</span>
+          <span id="cap2">Tries to prove each finding is safe</span>
+        </div>
+
+        <div class="card" id="cardA" style="top:56px">
+          <div class="ring" id="ringA"></div>
+          <div class="meta"><span class="pill high">HIGH</span><span class="cwe">CWE-79 · line 20</span></div>
+          <div class="headline">Attribute injection via dict keys</div>
+          <div class="status">
+            <span class="s-wait" id="a1">Proposed</span>
+            <span class="s-check" id="a2">Trying to prove it's safe…</span>
+            <span class="s-up" id="a3">Upheld <em>· escape() doesn't block spaces in keys</em></span>
+          </div>
+        </div>
+
+        <div class="card" id="cardB" style="top:168px">
+          <div class="ring" id="ringB"></div>
+          <div class="meta"><span class="pill low">LOW</span><span class="cwe">CWE-116 · line 25</span></div>
+          <div class="headline">Output not marked as safe Markup<span class="strike" id="strikeB"></span></div>
+          <div class="status">
+            <span class="s-wait" id="b1">Proposed</span>
+            <span class="s-check" id="b2">Trying to prove it's safe…</span>
+            <span class="s-rej" id="b3">Rejected <em>· the diff is cut off mid-function</em></span>
+          </div>
+        </div>
+
+        <div class="summary" id="summary">
+          <span class="chip g">1 finding surfaced</span><span class="chip n">1 rejected</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stage" id="sceneB">
+  <div class="wrap">
+    <div class="heading">
+      <div><div class="title">Across the benchmark</div>
+        <div class="sub">24 labeled samples · Python, JavaScript, Go</div></div>
+      <div class="legend sub"><span><i class="faint"></i>Generator only</span><span><i class="solid"></i>With verifier</span><span>Safe<i class="scale"></i>Danger</span></div>
+    </div>
+
+    <div class="metrics">
+      <div class="row">
+        <div class="lab"><div class="headline">False positives</div><div class="sub">Lower is better</div></div>
+        <div class="nums"><span class="num from" data-safe="0">28</span><span class="arrow">→</span><span class="num to" data-safe="0.714">8</span></div>
+        <div class="bars"><div class="bar"><span class="gen" id="g1" data-safe="0" style="width:100%"></span></div>
+          <div class="bar"><span class="ver" id="v1" data-safe="0.714" style="width:28.6%"></span></div></div>
+      </div>
+      <div class="row">
+        <div class="lab"><div class="headline">Precision</div><div class="sub">Flagged findings that are real</div></div>
+        <div class="nums"><span class="num from" data-safe="0.333">0.33</span><span class="arrow">→</span><span class="num to" data-safe="0.619">0.62</span></div>
+        <div class="bars"><div class="bar"><span class="gen" id="g2" data-safe="0.333" style="width:33.3%"></span></div>
+          <div class="bar"><span class="ver" id="v2" data-safe="0.619" style="width:61.9%"></span></div></div>
+      </div>
+      <div class="row">
+        <div class="lab"><div class="headline">Recall</div><div class="sub">Real bugs caught</div></div>
+        <div class="nums"><span class="num from" data-safe="0.933">0.93</span><span class="arrow">→</span><span class="num to" data-safe="0.867">0.87</span></div>
+        <div class="bars"><div class="bar"><span class="gen" id="g3" data-safe="0.933" style="width:93.3%"></span></div>
+          <div class="bar"><span class="ver" id="v3" data-safe="0.867" style="width:86.7%"></span></div></div>
+      </div>
+    </div>
+    <div class="foot caption">One run · claude-sonnet-5 generator · claude-opus-4-8 verifier · secreview v0.1.0</div>
+  </div>
+</section>
+
+<script>
+  if (new URLSearchParams(location.search).get("layout") === "page") document.body.classList.add("page");
+
+  // Safety scale: data-safe in [0, 1] (1 = safe) buckets into Apple's system
+  // green / orange / red. False positives use 1 - fp/28 (28 = the
+  // generator-only count); precision and recall use the value itself.
+  // Text takes the darker accessible variant, bars the vivid one.
+  const SAFETY = [
+    [0.8, "#248a3d", "#34c759"],   // safe
+    [0.45, "#b25f00", "#ff9500"],  // caution (amber text: #c93400 reads as red)
+    [0, "#d70015", "#ff3b30"],     // danger
+  ];
+  document.querySelectorAll("[data-safe]").forEach((el) => {
+    const [, text, bar] = SAFETY.find(([min]) => Number(el.dataset.safe) >= min);
+    if (el.classList.contains("num")) el.style.color = text;
+    else el.style.background = bar;
+  });
+
+  // Every animation lives on one 18s timeline so render.mjs can seek it.
+  const DUR = 18000;
+  const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
+  function tl(target, frames) {
+    const els = typeof target === "string" ? [document.getElementById(target)] : target;
+    const kf = frames.map(([t, p]) => ({ offset: t / DUR, easing: ease, ...p }));
+    if (kf[0].offset > 0) kf.unshift({ ...kf[0], offset: 0 });
+    if (kf.at(-1).offset < 1) kf.push({ ...kf.at(-1), offset: 1 });
+    els.forEach((el) => el.animate(kf, { duration: DUR, iterations: Infinity, fill: "both" }));
+  }
+  const appear = (t, from = {}) => [[0, { opacity: 0, ...from }], [t, { opacity: 0, ...from }], [t + 400, { opacity: 1, transform: "none" }]];
+  const blink = (a, b, c, d) => [[a, { opacity: 0 }], [b, { opacity: 1 }], [c, { opacity: 1 }], [d, { opacity: 0 }]];
+  const grow = (t) => [[0, { transform: "scaleX(0)" }], [t, { transform: "scaleX(0)" }], [t + 700, { transform: "scaleX(1)" }]];
+
+  // scene envelopes
+  tl("sceneA", [[0, { opacity: 0 }], [400, { opacity: 1 }], [10600, { opacity: 1 }], [11000, { opacity: 0 }]]);
+  tl("sceneB", [[0, { opacity: 0 }], [11000, { opacity: 0 }], [11400, { opacity: 1 }], [17400, { opacity: 1 }], [17900, { opacity: 0 }]]);
+
+  // code: scan sweep, then the upheld line lights up
+  tl("code", appear(0, { transform: "translateY(8px)" }));
+  tl("scan", [[600, { opacity: 0, transform: "translateY(0)" }], [800, { opacity: 1, transform: "translateY(0)" }],
+              [2200, { opacity: 1, transform: "translateY(196px)" }], [2400, { opacity: 0, transform: "translateY(196px)" }]]);
+  tl("hit", appear(7800));
+  tl("marker", appear(7900, { transform: "scale(0.9)" }));
+
+  // steps + captions
+  tl("on1", [[0, { opacity: 0 }], [1000, { opacity: 0 }], [1300, { opacity: 1 }], [3900, { opacity: 1 }], [4200, { opacity: 0 }]]);
+  tl("link", grow(3700));
+  tl("on2", appear(4100));
+  tl("cap1", blink(1100, 1400, 3800, 4100));
+  tl("cap2", appear(4200));
+
+  // generator proposes both findings
+  tl("cardA", appear(1700, { transform: "translateY(8px)" }));
+  tl("cardB", [[0, { opacity: 0, transform: "translateY(8px)" }], [2300, { opacity: 0, transform: "translateY(8px)" }],
+               [2700, { opacity: 1, transform: "none" }], [6300, { opacity: 1, transform: "none" }], [6700, { opacity: 0.55, transform: "none" }]]);
+  tl("a1", blink(1800, 2100, 6100, 6300));
+  tl("b1", blink(2400, 2700, 4600, 4800));
+
+  // verifier: B first (rejected), then A (upheld)
+  tl("ringB", blink(4600, 4800, 5900, 6100));
+  tl("b2", blink(4800, 5000, 5700, 5900));
+  tl("b3", appear(5900));
+  tl("strikeB", grow(6000));
+  tl("ringA", blink(6400, 6600, 7600, 7800));
+  tl("a2", blink(6600, 6800, 7400, 7600));
+  tl("a3", appear(7600));
+  tl("summary", appear(8500, { transform: "translateY(4px)" }));
+
+  // scene B: rows fade in, bars grow (generator, then verifier)
+  const rows = [...document.querySelectorAll(".row")];
+  rows.forEach((r, i) => tl([r], appear(11300 + i * 200)));
+  [["g1", 11600], ["v1", 12200], ["g2", 11800], ["v2", 12400], ["g3", 12000], ["v3", 12600]]
+    .forEach(([id, t]) => tl(id, grow(t)));
+
+  // render.mjs hook: freeze every animation at time t (ms)
+  window.seek = (t) => document.getAnimations().forEach((a) => { a.pause(); a.currentTime = t; });
+  window.DURATION = DUR;
+</script>
+</body>
+</html>
