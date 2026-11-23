@@ -45,6 +45,9 @@ tests/                # LLM-free unit tests (config, diff, metrics)
 ## Quickstart
 
 ```bash
+# On macOS with iCloud Desktop/Documents sync, use `.venv.nosync` instead
+# (iCloud hides files in synced venvs and Python 3.13 then skips the
+# editable install). `ln -s .venv.nosync .venv` keeps the commands below.
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
